@@ -18,21 +18,20 @@ public class FMPanel {
     // NOTE: used reverse e1 and e2:
     private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(e2.isDir(), e1.isDir());
 
-    private final Set<FMElement> elements;
+    // TODO: used a hack with instanceof!
+    // NOTE: used reverse e1 and e2:
+    private static final Comparator<FMElement> parentDirComp = (e1, e2) -> Boolean.compare(e2 instanceof ParentDirectory, e1 instanceof ParentDirectory);
 
+    private final Set<FMElement> elements;
 
     private FMPanel(Set<FMElement> elements) {
         this.elements = elements;
     }
 
-    public int length() {
-        return elements.size();
-    }
-
     public List<FMElement> getSortedList(ElementColumnProperty property, boolean reversed) {
         List<FMElement> sorted = new ArrayList<>(elements);
         Comparator<FMElement> comparator = property.comparator(reversed);
-        sorted.sort(dirComp.thenComparing(comparator));
+        sorted.sort(parentDirComp.thenComparing(dirComp).thenComparing(comparator));
         return sorted;
     }
 
@@ -42,6 +41,9 @@ public class FMPanel {
 
     public static FMPanel constructForDirectory(File dir) {
         Set<FMElement> elements = new HashSet<FMElement>();
+        File p = dir.getParentFile();
+        if (p != null)
+            elements.add(new ParentDirectory(new RegularDirectory(p)));
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
                 elements.add(new RegularFile(file));
