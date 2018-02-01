@@ -1,6 +1,9 @@
 package steelart.alex.filemanager;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Regular directory element in panel
@@ -8,20 +11,46 @@ import java.io.File;
  * @author Alexey Merkulov
  * @date 27 January 2018
  */
-public class RegularDirectory implements FMDirectory {
-    private final File file;
+public class RegularDirectory implements FMEnterable {
+    private final File dir;
 
     public RegularDirectory(File file) {
-        this.file = file;
+        this.dir = file;
     }
 
     @Override
     public String name() {
-        return file.getName();
+        return dir.getName();
     }
 
     @Override
-    public FMPanel enterDir() {
-        return FMPanel.constructForDirectory(file);
+    public FMElementCollection enter() {
+        Set<FMElement> elements = new HashSet<FMElement>();
+        FMElementCollection fmDirectory = new FMElementCollection() {
+            @Override
+            public Collection<FMElement> content() {
+                return elements;
+            }
+            @Override
+            public FMElementCollection leaveDir() {
+                return null;
+            }
+        };
+        File p = dir.getParentFile();
+        if (p != null)
+            elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter()));
+        for (File file : dir.listFiles()) {
+            if (file.isFile()) {
+                elements.add(new RegularFile(file));
+            } else if (file.isDirectory()) {
+                elements.add(new RegularDirectory(file));
+            }
+        }
+        return fmDirectory;
+    }
+
+    @Override
+    public long size() {
+        return -1;
     }
 }

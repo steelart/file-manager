@@ -14,15 +14,15 @@ public interface FMElement {
     public long size();
 
     /** @return directory representation of this element or null (for simple files) */
-    public default FMDirectory asDir() {
+    public default FMEnterable asEnterable() {
         return null;
     }
 
     /**
      * Just helper method. Do not redefine it!
-     * @return true iff this element is a directory
+     * @return true iff this element is an enterable
      */
-    public default boolean isDir() {
-        return asDir() != null;
+    public default boolean isEnterable() {
+        return asEnterable() != null;
     }
 }

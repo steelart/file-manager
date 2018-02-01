@@ -17,7 +17,7 @@ public class FMMain {
         // There could be command line arguments parsing
         Path currentRelativePath = Paths.get("");
         String curDirPath = currentRelativePath.toAbsolutePath().toString();
-        SFMWindow app = new SFMWindow(FMPanel.constructForDirectory(new File(curDirPath)));
+        SFMWindow app = new SFMWindow(new RegularDirectory(new File(curDirPath)).enter());
         app.setVisible(true);
     }
 }

@@ -8,7 +8,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
-import steelart.alex.filemanager.FMPanel;
+import steelart.alex.filemanager.FMElementCollection;
 
 
 /**
@@ -20,7 +20,7 @@ import steelart.alex.filemanager.FMPanel;
 public class SFMWindow extends JFrame {
     private static final long serialVersionUID = 1L;
 
-    public SFMWindow(FMPanel startPanel) {
+    public SFMWindow(FMElementCollection start) {
         super("Simple Example");
         this.setBounds(100,100,1000,500);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -40,7 +40,7 @@ public class SFMWindow extends JFrame {
         this.setJMenuBar(menuBar);
 
         //Create and set up the content pane.
-        SFMPanel newContentPane = new SFMPanel(startPanel);
+        SFMPanel newContentPane = new SFMPanel(start);
         newContentPane.setOpaque(true); //content panes must be opaque
         this.setContentPane(newContentPane);
     }
