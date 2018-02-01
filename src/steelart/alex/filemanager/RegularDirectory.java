@@ -41,7 +41,11 @@ public class RegularDirectory implements FMEnterable {
             elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter()));
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
-                elements.add(new RegularFile(file));
+                if (file.getName().endsWith(".zip") || file.getName().endsWith(".jar")) {
+                    elements.add(new FMZipFile(file, () -> this.enter()));
+                } else {
+                    elements.add(new RegularFile(file));
+                }
             } else if (file.isDirectory()) {
                 elements.add(new RegularDirectory(file));
             }

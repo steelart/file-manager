@@ -85,7 +85,7 @@ public class SFMPanel extends JPanel {
     private  class FMPanelModel extends AbstractTableModel {
         private static final long serialVersionUID = 1L;
 
-        //private final FMDirectory currentDir;
+        //private final FMElementCollection currentDir;
         private final List<FMElement> elements;
 
         public FMPanelModel(FMElementCollection currentDir) {
