@@ -13,28 +13,29 @@ import java.util.zip.ZipFile;
  * @date 26 January 2018
  */
 public class FMZipFile implements FMEnterable {
-    private final File file;
+    private final FMElement element;
     private final Supplier<FMElementCollection> exitPoint;
 
-    public FMZipFile(File file, Supplier<FMElementCollection> exitPoint) {
-        this.file = file;
+    public FMZipFile(FMElement element, Supplier<FMElementCollection> exitPoint) {
+        this.element = element;
         this.exitPoint = exitPoint;
     }
 
     @Override
     public String name() {
-        return file.getName();
+        return element.name();
     }
 
     @Override
     public long size() {
-        return file.length();
+        return element.size();
     }
 
     @Override
     public FMElementCollection enter() {
         ZipFile zip;
-        try {
+        try (FileProvider profider = element.requestFile()) {
+            File file = profider.get();
             zip = new ZipFile(file);
             DirInZip dir = DirInZip.constructDirTree(zip, exitPoint);
             return dir.enter();
@@ -42,5 +43,10 @@ public class FMZipFile implements FMEnterable {
             e.printStackTrace();
             throw new IllegalStateException("Some problem in zip file");
         }
+    }
+
+    @Override
+    public FileProvider requestFile() {
+        return element.requestFile();
     }
 }

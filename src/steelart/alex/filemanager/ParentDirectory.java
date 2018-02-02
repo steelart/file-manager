@@ -32,4 +32,9 @@ public class ParentDirectory implements FMEnterable {
         cur.leaveDir();
         return exitPoint.get();
     }
+
+    @Override
+    public FileProvider requestFile() {
+        return null;
+    }
 }

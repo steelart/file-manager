@@ -18,6 +18,9 @@ public interface FMElement {
         return null;
     }
 
+    /** @return file provider or null if this element is a directory */
+    public FileProvider requestFile();
+
     /**
      * Just helper method. Do not redefine it!
      * @return true iff this element is an enterable

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
 * A collection of static methods for file manager project
@@ -25,5 +26,13 @@ public class FMUtils {
         Comparator<FMElement> comparator = property.comparator(reversed);
         sorted.sort(parentDirComp.thenComparing(dirComp).thenComparing(comparator));
         return sorted;
+    }
+
+    public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint) {
+        if (e.name().endsWith(".zip") || e.name().endsWith(".jar")) {
+            return new FMZipFile(e, exitPoint);
+        } else {
+            return e;
+        }
     }
 }

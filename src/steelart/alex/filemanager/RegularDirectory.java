@@ -41,11 +41,9 @@ public class RegularDirectory implements FMEnterable {
             elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter()));
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
-                if (file.getName().endsWith(".zip") || file.getName().endsWith(".jar")) {
-                    elements.add(new FMZipFile(file, () -> this.enter()));
-                } else {
-                    elements.add(new RegularFile(file));
-                }
+                RegularFile rf = new RegularFile(file);
+                FMElement e = FMUtils.filterElement(rf, () -> this.enter());
+                elements.add(e);
             } else if (file.isDirectory()) {
                 elements.add(new RegularDirectory(file));
             }
@@ -56,5 +54,10 @@ public class RegularDirectory implements FMEnterable {
     @Override
     public long size() {
         return -1;
+    }
+
+    @Override
+    public FileProvider requestFile() {
+        return null;
     }
 }

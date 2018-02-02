@@ -41,6 +41,11 @@ public class DirInZip implements FMEnterable {
     }
 
     @Override
+    public FileProvider requestFile() {
+        return null;
+    }
+
+    @Override
     public long size() {
         return -1;
     }
@@ -99,8 +104,9 @@ public class DirInZip implements FMEnterable {
             List<String> dirPath = list.subList(0, last);
             String name = list.get(last);
             DirInZip dir = pathToDir.apply(dirPath);
-            FileInZip z = new FileInZip(elem, name);
-            dir.elements.put(name, z);
+            FileInZip z = new FileInZip(zip, elem, name);
+            FMElement e = FMUtils.filterElement(z, () -> dir.enter());
+            dir.elements.put(name, e);
         }
         return root;
     }

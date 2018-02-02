@@ -26,4 +26,9 @@ public class RegularFile implements FMElement {
     public long size() {
         return size;
     }
+
+    @Override
+    public FileProvider requestFile() {
+        return FileProvider.fromFile(file);
+    }
 }
