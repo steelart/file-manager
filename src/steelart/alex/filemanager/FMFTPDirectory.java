@@ -1,0 +1,116 @@
+package steelart.alex.filemanager;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Supplier;
+
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+
+/**
+ * It is a file manager element represented FTP directory
+ *
+ * @author Alexey Merkulov
+ * @date 4 February 2018
+ */
+public class FMFTPDirectory implements FMEnterable  {
+    private final String path;
+    private final String name;
+    private final FTPClient client;
+    private final Supplier<FMElementCollection> exitPoint;
+
+
+    private FMFTPDirectory(String path, String name, FTPClient client, Supplier<FMElementCollection> exitPoint) {
+        this.path = path;
+        this.name = name;
+        this.client = client;
+        this.exitPoint = exitPoint;
+    }
+
+    @Override
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public long size() {
+        return -1;
+    }
+
+    @Override
+    public FileProvider requestFile() {
+        return null;
+    }
+
+    @Override
+    public FMElementCollection enter() {
+        try {
+            return constructFromCurFtpDir(path + '/' + name(), client, exitPoint);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static FMElementCollection enterFtpServer(String server) {
+        FTPClient client = new FTPClient();
+        try {
+            client.connect(server);
+            client.enterLocalPassiveMode();
+            client.login("anonymous", "");
+            if (client.isConnected()) {
+                return constructFromCurFtpDir("", client, null);
+            }
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            disconnect(client);
+            return null;
+        }
+    }
+
+    private static void disconnect(FTPClient client) {
+        try {
+            client.logout();
+            client.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static FMElementCollection constructFromCurFtpDir(String path, FTPClient client, Supplier<FMElementCollection> exitPoint) throws IOException {
+        List<FMElement> content = new ArrayList<>();
+        FMElementCollection res = new FMElementCollection() {
+            @Override
+            public FMElementCollection leaveDir() {
+                if (exitPoint == null) {
+                    disconnect(client);
+                    return null;
+                } else {
+                    return exitPoint.get();
+                }
+            }
+
+            @Override
+            public Collection<FMElement> content() {
+                return content;
+            }
+        };
+        FTPFile[] ftpFiles = client.listFiles(path);
+        for (FTPFile ftpFile : ftpFiles) {
+            // Check if FTPFile is a regular file
+            if (ftpFile.getType() == FTPFile.FILE_TYPE) {
+                content.add(new FMFTPFile(path, ftpFile, client));
+            }
+            if (ftpFile.getType() == FTPFile.DIRECTORY_TYPE) {
+                content.add(new FMFTPDirectory(path, ftpFile.getName(), client, () -> res));
+            }
+        }
+        if (exitPoint != null) {
+            content.add(new ParentDirectory(res, exitPoint));
+        }
+        return res;
+    }
+}
