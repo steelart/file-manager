@@ -31,6 +31,7 @@ public class SFMPanel extends JPanel {
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
+    private FMElementCollection curDir;
 
     public SFMPanel(FMElementCollection start) {
         super(new GridLayout(1,0));
@@ -42,11 +43,16 @@ public class SFMPanel extends JPanel {
         return FMUtils.getSortedList(elements, ElementColumnProperty.NAME, false);
     }
 
+    public FMElementCollection getCurrentDirectory() {
+        return curDir;
+    }
+
     private void resetTable(FMElementCollection newDir) {
         if (table != null) {
             remove(table);
         }
 
+        curDir = newDir;
         FMPanelModel pm = new FMPanelModel(newDir);
         table = new JTable(pm);
 
@@ -66,20 +72,24 @@ public class SFMPanel extends JPanel {
                 int selected = selectedRow[0];
 
                 FMElement element = pm.elements.get(selected);
-                FMEnterable entareble = element.asEnterable();
-                if (entareble != null) {
-                    removeAll();
-                    revalidate();
-                    repaint();
-                    resetTable(entareble.enter());
-                    revalidate();
-                    repaint();
+                FMEnterable enterable = element.asEnterable();
+                if (enterable != null) {
+                    enterNewDir(enterable.enter());
                 }
             }
         });
 
         //Add the scroll pane to this panel.
         add(scrollPane);
+    }
+
+    public void enterNewDir(FMElementCollection newDir) {
+        removeAll();
+        revalidate();
+        repaint();
+        resetTable(newDir);
+        revalidate();
+        repaint();
     }
 
     private  class FMPanelModel extends AbstractTableModel {

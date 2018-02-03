@@ -1,5 +1,6 @@
 package steelart.alex.filemanager;
 
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,7 +18,9 @@ public class FMMain {
         // There could be command line arguments parsing
         Path currentRelativePath = Paths.get("");
         String curDirPath = currentRelativePath.toAbsolutePath().toString();
-        SFMWindow app = new SFMWindow(new RegularDirectory(new File(curDirPath)).enter());
+        FMEnterable enterable = new RegularDirectory(new File(curDirPath));
+        FMElementCollection directory = enterable.enter();
+        SFMWindow app = new SFMWindow(directory);
         app.setVisible(true);
     }
 }

@@ -47,21 +47,21 @@ public class FMFTPDirectory implements FMEnterable  {
     @Override
     public FMElementCollection enter() {
         try {
-            return constructFromCurFtpDir(path + '/' + name(), client, exitPoint);
+            return constructFromCurFtpDir(path + '/' + name(), client, exitPoint, false);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public static FMElementCollection enterFtpServer(String server) {
+    public static FMElementCollection enterFtpServer(String server, Supplier<FMElementCollection> exitPoint) {
         FTPClient client = new FTPClient();
         try {
             client.connect(server);
             client.enterLocalPassiveMode();
             client.login("anonymous", "");
             if (client.isConnected()) {
-                return constructFromCurFtpDir("", client, null);
+                return constructFromCurFtpDir("", client, exitPoint, true);
             }
             return null;
         } catch (IOException e) {
@@ -80,17 +80,15 @@ public class FMFTPDirectory implements FMEnterable  {
         }
     }
 
-    private static FMElementCollection constructFromCurFtpDir(String path, FTPClient client, Supplier<FMElementCollection> exitPoint) throws IOException {
+    private static FMElementCollection constructFromCurFtpDir(String path, FTPClient client, Supplier<FMElementCollection> exitPoint, boolean disconnectOnExit) throws IOException {
         List<FMElement> content = new ArrayList<>();
         FMElementCollection res = new FMElementCollection() {
             @Override
             public FMElementCollection leaveDir() {
-                if (exitPoint == null) {
+                if (disconnectOnExit) {
                     disconnect(client);
-                    return null;
-                } else {
-                    return exitPoint.get();
                 }
+                return exitPoint != null ? exitPoint.get() : null;
             }
 
             @Override
