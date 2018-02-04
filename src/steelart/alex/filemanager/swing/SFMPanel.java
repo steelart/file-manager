@@ -2,10 +2,15 @@ package steelart.alex.filemanager.swing;
 
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -17,6 +22,7 @@ import javax.swing.table.AbstractTableModel;
 import steelart.alex.filemanager.FMElementCollection;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
+import steelart.alex.filemanager.FileProvider;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMEnterable;
 
@@ -28,6 +34,8 @@ import steelart.alex.filemanager.FMEnterable;
  */
 public class SFMPanel extends JPanel {
     private static final long serialVersionUID = 1L;
+
+    private final PreviewWindow preview = new PreviewWindow();
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
@@ -75,6 +83,21 @@ public class SFMPanel extends JPanel {
                 FMEnterable enterable = element.asEnterable();
                 if (enterable != null) {
                     enterNewDir(enterable.enter());
+                } else {
+                    try (FileProvider provider = element.requestFile()) {
+                        File f = provider.get();
+                        String mimeType = Files.probeContentType(f.toPath());
+                        if (mimeType.startsWith("image/")) {
+                            final BufferedImage image = ImageIO.read(f);
+                            preview.resetImage(image);
+                        } else if (mimeType.startsWith("text/")) {
+                            preview.resetText(f);
+                        } else {
+                            System.out.println("Unsupported type: " + mimeType);
+                        }
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         });
