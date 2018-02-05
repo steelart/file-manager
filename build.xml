@@ -1,0 +1,34 @@
+<project name="steelart-file-manager" default="prog" basedir=".">
+  <description>
+    Steelart example file manager
+  </description>
+  <property name="src" location="src"/>
+  <property name="build" location="build"/>
+  <property name="jarname" value="${ant.project.name}.jar"/>
+
+  <target name="init">
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init" description="compile the source">
+    <javac srcdir="${src}" destdir="${build}">
+      <classpath>
+        <pathelement path="lib/commons-io-2.6.jar"/>
+        <pathelement path="lib/commons-net-3.6.jar"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="prog" depends="compile" description="generate the jar file">
+    <jar jarfile="${jarname}" basedir="${build}">
+      <manifest>
+        <attribute name="Main-Class" value="steelart.alex.filemanager.FMMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="clean" description="clean up">
+    <delete dir="${build}"/>
+    <delete file="${jarname}"/>
+  </target>
+</project>
