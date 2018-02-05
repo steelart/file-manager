@@ -12,6 +12,8 @@ public interface FMElement {
     public String name();
     /** size of file manager element */
     public long size();
+    /** @return true iff this element is a directory (it should be enterable in this case) */
+    public boolean isDirectory();
 
     /** @return directory representation of this element or null (for simple files) */
     public default FMEnterable asEnterable() {

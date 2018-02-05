@@ -41,4 +41,9 @@ class FileInZip implements FMElement {
             return null;
         }
     }
+
+    @Override
+    public boolean isDirectory() {
+        return false;
+    }
 }

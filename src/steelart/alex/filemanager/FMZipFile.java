@@ -49,4 +49,9 @@ public class FMZipFile implements FMEnterable {
     public FileProvider requestFile() {
         return element.requestFile();
     }
+
+    @Override
+    public boolean isDirectory() {
+        return false;
+    }
 }

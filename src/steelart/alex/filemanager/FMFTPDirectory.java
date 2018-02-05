@@ -45,6 +45,11 @@ public class FMFTPDirectory implements FMEnterable  {
     }
 
     @Override
+    public boolean isDirectory() {
+        return true;
+    }
+
+    @Override
     public FMElementCollection enter() {
         try {
             return constructFromCurFtpDir(path + '/' + name(), client, exitPoint, false);

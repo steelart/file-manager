@@ -110,4 +110,9 @@ public class DirInZip implements FMEnterable {
         }
         return root;
     }
+
+    @Override
+    public boolean isDirectory() {
+        return true;
+    }
 }

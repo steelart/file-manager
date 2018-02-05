@@ -60,4 +60,9 @@ public class RegularDirectory implements FMEnterable {
     public FileProvider requestFile() {
         return null;
     }
+
+    @Override
+    public boolean isDirectory() {
+        return true;
+    }
 }

@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 public class FMUtils {
     // TODO: it could be made as parameter (whether we need to use directory sort or not)
     // NOTE: used reverse e1 and e2:
-    private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(e2.isEnterable(), e1.isEnterable());
+    private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(e2.isDirectory(), e1.isDirectory());
 
     // TODO: used a hack with instanceof!
     // NOTE: used reverse e1 and e2:
