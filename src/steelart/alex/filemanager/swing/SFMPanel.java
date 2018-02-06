@@ -87,7 +87,9 @@ public class SFMPanel extends JPanel {
                     try (FileProvider provider = element.requestFile()) {
                         File f = provider.get();
                         String mimeType = Files.probeContentType(f.toPath());
-                        if (mimeType.startsWith("image/")) {
+                        if (mimeType == null) {
+                            System.out.println("Unknown type for file: " + f);
+                        } if (mimeType.startsWith("image/")) {
                             final BufferedImage image = ImageIO.read(f);
                             preview.resetImage(image);
                         } else if (mimeType.startsWith("text/")) {
