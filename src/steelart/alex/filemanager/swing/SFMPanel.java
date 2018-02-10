@@ -1,16 +1,14 @@
 package steelart.alex.filemanager.swing;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -20,9 +18,12 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 
 import steelart.alex.filemanager.FMElementCollection;
+import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
 import steelart.alex.filemanager.FileProvider;
+import steelart.alex.filemanager.api.ContentProvider;
+import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMEnterable;
 
@@ -34,6 +35,8 @@ import steelart.alex.filemanager.FMEnterable;
  */
 public class SFMPanel extends JPanel {
     private static final long serialVersionUID = 1L;
+
+    private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingTextPreviewPlugin(), new SwingImagePreviewPlugin());
 
     private final PreviewWindow preview = new PreviewWindow();
 
@@ -85,17 +88,10 @@ public class SFMPanel extends JPanel {
                     enterNewDir(enterable.enter());
                 } else {
                     try (FileProvider provider = element.requestFile()) {
-                        File f = provider.get();
-                        String mimeType = Files.probeContentType(f.toPath());
-                        if (mimeType == null) {
-                            System.out.println("Unknown type for file: " + f);
-                        } if (mimeType.startsWith("image/")) {
-                            final BufferedImage image = ImageIO.read(f);
-                            preview.resetImage(image);
-                        } else if (mimeType.startsWith("text/")) {
-                            preview.resetText(f);
-                        } else {
-                            System.out.println("Unsupported type: " + mimeType);
+                        File file = provider.get();
+                        Component c = findPreview(file);
+                        if (c != null) {
+                            preview.resetPanel(c);
                         }
                     } catch (IOException e1) {
                         e1.printStackTrace();
@@ -106,6 +102,17 @@ public class SFMPanel extends JPanel {
 
         //Add the scroll pane to this panel.
         add(scrollPane);
+    }
+
+    private Component findPreview(File file) throws IOException {
+        ContentProvider provider = new ContentProviderImpl(file);
+        for (SwingPreviewPlugin p : plugins) {
+            Component preview = p.getPreview(provider);
+            if (preview != null)
+                return preview;
+        }
+        System.out.println("No preview for file: " + file);
+        return null;
     }
 
     public void enterNewDir(FMElementCollection newDir) {
