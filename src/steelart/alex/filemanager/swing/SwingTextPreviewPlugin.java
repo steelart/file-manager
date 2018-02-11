@@ -36,8 +36,14 @@ class SwingTextPreviewPlugin implements SwingPreviewPlugin {
 
         area.read(reader, "HelloWorld");
 
-        JScrollPane scrollPane = new JScrollPane(area);
+        JScrollPane scrollPane = new JScrollPane(area) {
+            private static final long serialVersionUID = 1L;
 
+            @Override
+            public void requestFocus() {
+                area.requestFocus();
+            }
+        };
         return scrollPane;
     }
 }

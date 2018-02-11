@@ -1,6 +1,5 @@
 package steelart.alex.filemanager.swing;
 
-import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
@@ -12,6 +11,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -21,12 +21,9 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 
 import steelart.alex.filemanager.FMElementCollection;
-import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
 import steelart.alex.filemanager.FileProvider;
-import steelart.alex.filemanager.api.ContentProvider;
-import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMEnterable;
 
@@ -39,17 +36,16 @@ import steelart.alex.filemanager.FMEnterable;
 public class SFMPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
-    private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingTextPreviewPlugin(), new SwingImagePreviewPlugin());
-
-    private final PreviewWindow preview = new PreviewWindow();
+    private final Consumer<FMElement> previewAction;
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
     private FMElementCollection curDir;
     private List<FMElement> elements;
 
-    public SFMPanel(FMElementCollection start) {
+    public SFMPanel(Consumer<FMElement> previewAction, FMElementCollection start) {
         super(new GridLayout(1,0));
+        this.previewAction = previewAction;
 
         resetTable(start);
     }
@@ -60,6 +56,15 @@ public class SFMPanel extends JPanel {
 
     public FMElementCollection getCurrentDirectory() {
         return curDir;
+    }
+
+    @Override
+    public void requestFocus() {
+        if (table == null) {
+            super.requestFocus();
+        } else {
+            table.requestFocus();
+        }
     }
 
     private void resetTable(FMElementCollection newDir) {
@@ -143,22 +148,13 @@ public class SFMPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        this.add(scrollPane);
+        this.add(new JScrollPane(table));
     }
 
     private void previewAction() {
         FMElement element = getCurElement();
-        if (element == null) return;
-        try (FileProvider provider = element.requestFile()) {
-            File file = provider.get();
-            Component c = findPreview(file);
-            if (c != null) {
-                preview.resetPanel(c);
-            }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
+        if (element != null)
+            previewAction.accept(element);
     }
 
     private void enterAction() {
@@ -187,17 +183,6 @@ public class SFMPanel extends JPanel {
         int selected = selectedRow[0];
         FMElement element = elements.get(selected);
         return element;
-    }
-
-    private Component findPreview(File file) throws IOException {
-        ContentProvider provider = new ContentProviderImpl(file);
-        for (SwingPreviewPlugin p : plugins) {
-            Component preview = p.getPreview(provider);
-            if (preview != null)
-                return preview;
-        }
-        System.out.println("No preview for file: " + file);
-        return null;
     }
 
     public void enterNewDir(FMElementCollection newDir) {
