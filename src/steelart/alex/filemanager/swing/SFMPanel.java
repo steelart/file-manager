@@ -1,8 +1,12 @@
 package steelart.alex.filemanager.swing;
 
 import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.Desktop;
 import java.awt.GridLayout;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -12,7 +16,6 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
@@ -43,6 +46,7 @@ public class SFMPanel extends JPanel {
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
     private FMElementCollection curDir;
+    private List<FMElement> elements;
 
     public SFMPanel(FMElementCollection start) {
         super(new GridLayout(1,0));
@@ -59,49 +63,130 @@ public class SFMPanel extends JPanel {
     }
 
     private void resetTable(FMElementCollection newDir) {
-        if (table != null) {
-            remove(table);
-        }
-
         curDir = newDir;
-        FMPanelModel pm = new FMPanelModel(newDir);
+        this.elements = getElementList(curDir.content());
+        if (table == null) {
+            createTable();
+        } else {
+            table.revalidate();
+        }
+        selectFirstElement();
+    }
+
+    private void selectFirstElement() {
+        selectElement(0);
+    }
+
+    private void selectLastElement() {
+        selectElement(table.getRowCount()-1);
+    }
+
+    private void selectElement(int row) {
+        table.setRowSelectionInterval(row, row);
+        table.setColumnSelectionInterval(0, table.getColumnCount()-1);
+    }
+
+    private void createTable() {
+        FMPanelModel pm = new FMPanelModel();
         table = new JTable(pm);
 
-        table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         table.setFillsViewportHeight(true);
-
         table.setCellSelectionEnabled(true);
-        //Create the scroll pane and add the table to it.
-        JScrollPane scrollPane = new JScrollPane(table);
 
-        final ListSelectionModel cellSelectionModel = table.getSelectionModel();
-        cellSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        cellSelectionModel.addListSelectionListener(new ListSelectionListener() {
+        ListSelectionListener listener = new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
+                int[] selectedColumns = table.getSelectedColumns();
+                if (selectedColumns.length != table.getColumnCount()) {
+                    table.setColumnSelectionInterval(0, table.getColumnCount()-1);
+                }
+            }
+        };
 
-                int[] selectedRow = table.getSelectedRows();
-                int selected = selectedRow[0];
+        // For some magic reason it is needed to hook selection mode for column model
+        // Selection mode hook for whole table is not enough
+        //table.getSelectionModel().addListSelectionListener(listener);
+        table.getColumnModel().getSelectionModel().addListSelectionListener(listener);
 
-                FMElement element = pm.elements.get(selected);
-                FMEnterable enterable = element.asEnterable();
-                if (enterable != null) {
-                    enterNewDir(enterable.enter());
-                } else {
-                    try (FileProvider provider = element.requestFile()) {
-                        File file = provider.get();
-                        Component c = findPreview(file);
-                        if (c != null) {
-                            preview.resetPanel(c);
-                        }
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
+        table.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+            }
+            @Override
+            public void keyReleased(KeyEvent e) {
+            }
+            @Override
+            public void keyPressed(KeyEvent e) {
+                int code = e.getKeyCode();
+                switch (code) {
+                case KeyEvent.VK_F3:
+                    previewAction();
+                    break;
+                case KeyEvent.VK_ENTER:
+                    enterAction();
+                    break;
+                case KeyEvent.VK_HOME:
+                    selectFirstElement();
+                    break;
+                case KeyEvent.VK_END:
+                    selectLastElement();
+                    break;
                 }
             }
         });
 
-        //Add the scroll pane to this panel.
-        add(scrollPane);
+        table.addMouseListener(new MouseAdapter(){
+            @Override
+            public void mouseClicked(MouseEvent e){
+                if(e.getClickCount() >= 2){
+                    enterAction();
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        this.add(scrollPane);
+    }
+
+    private void previewAction() {
+        FMElement element = getCurElement();
+        if (element == null) return;
+        try (FileProvider provider = element.requestFile()) {
+            File file = provider.get();
+            Component c = findPreview(file);
+            if (c != null) {
+                preview.resetPanel(c);
+            }
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    private void enterAction() {
+        FMElement element = getCurElement();
+        if (element == null) return;
+        FMEnterable enterable = element.asEnterable();
+        if (enterable != null) {
+            enterNewDir(enterable.enter());
+        } else {
+            try (FileProvider provider = element.requestFile()) {
+                File file = provider.get();
+                try {
+                    Desktop.getDesktop().open(file);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private FMElement getCurElement() {
+        int[] selectedRow = table.getSelectedRows();
+        if (selectedRow == null || selectedRow.length == 0) {
+            return null;
+        }
+        int selected = selectedRow[0];
+        FMElement element = elements.get(selected);
+        return element;
     }
 
     private Component findPreview(File file) throws IOException {
@@ -116,24 +201,14 @@ public class SFMPanel extends JPanel {
     }
 
     public void enterNewDir(FMElementCollection newDir) {
-        removeAll();
-        revalidate();
-        repaint();
         resetTable(newDir);
-        revalidate();
         repaint();
     }
 
     private  class FMPanelModel extends AbstractTableModel {
         private static final long serialVersionUID = 1L;
 
-        //private final FMElementCollection currentDir;
-        private final List<FMElement> elements;
-
-        public FMPanelModel(FMElementCollection currentDir) {
-            //this.currentDir = currentDir;
-            this.elements = getElementList(currentDir.content());
-
+        public FMPanelModel() {
         }
 
         public int getColumnCount() {
