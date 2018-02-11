@@ -15,4 +15,7 @@ public interface FMEnterable extends FMElement {
 
     /** Calculate directory content and enter to it */
     public FMElementCollection enter();
+
+    /** @return true iff this element is a directory */
+    public boolean isDirectory();
 }

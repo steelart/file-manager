@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 public class FMUtils {
     // TODO: it could be made as parameter (whether we need to use directory sort or not)
     // NOTE: used reverse e1 and e2:
-    private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(e2.isDirectory(), e1.isDirectory());
+    private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(isDir(e2), isDir(e1));
 
     // TODO: used a hack with instanceof!
     // NOTE: used reverse e1 and e2:
@@ -34,5 +34,13 @@ public class FMUtils {
         } else {
             return e;
         }
+    }
+
+    /** A shortcut to test {@link FMElement} to be a directory */
+    public static boolean isDir(FMElement e) {
+        FMEnterable enterable = e.asEnterable();
+        if (enterable != null)
+            return enterable.isDirectory();
+        return false;
     }
 }

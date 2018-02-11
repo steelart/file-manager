@@ -48,9 +48,4 @@ public class FMFTPFile implements FMElement {
             return null;
         }
     }
-
-    @Override
-    public boolean isDirectory() {
-        return false;
-    }
 }

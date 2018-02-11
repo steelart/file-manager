@@ -31,9 +31,4 @@ public class RegularFile implements FMElement {
     public FileProvider requestFile() {
         return FileProvider.fromFile(file);
     }
-
-    @Override
-    public boolean isDirectory() {
-        return false;
-    }
 }
