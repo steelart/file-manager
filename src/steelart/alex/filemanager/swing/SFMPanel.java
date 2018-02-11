@@ -1,6 +1,8 @@
 package steelart.alex.filemanager.swing;
 
+import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -19,6 +21,7 @@ import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import steelart.alex.filemanager.FMElementCollection;
 import steelart.alex.filemanager.ElementColumnProperty;
@@ -145,6 +148,31 @@ public class SFMPanel extends JPanel {
                 if(e.getClickCount() >= 2){
                     enterAction();
                 }
+            }
+        });
+
+        //TODO: Here is used implemented specific behavior from DefaultTableCellRenderer...
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void setFont(Font font) {
+                // Original getTableCellRendererComponent implementation uses setFont by value from table.getFont
+                // So here we disable that action!
+            }
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                FMElement e = elements.get(row);
+                Font f = table.getFont();
+                if (FMUtils.isDir(e)) {
+                    f = f.deriveFont(Font.BOLD);
+                } else if (e.asEnterable() != null) {
+                    f = f.deriveFont(Font.ITALIC);
+                }
+                super.setFont(f);
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             }
         });
 
