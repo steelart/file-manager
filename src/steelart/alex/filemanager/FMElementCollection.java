@@ -20,4 +20,7 @@ public interface FMElementCollection {
 
     /** @return content of current directory */
     public Collection<FMElement> content();
+
+    /** @return string path to this directory */
+    public String path();
 }

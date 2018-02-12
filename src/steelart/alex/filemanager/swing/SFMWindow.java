@@ -43,11 +43,11 @@ public class SFMWindow extends JFrame {
     private boolean previewMode = false;
 
     public SFMWindow(FMElementCollection start) {
-        super("Simple Example");
+        super(start.path());
         this.setBounds(100,100,800,500);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        panel = new SFMPanel(this::preview, start);
+        panel = new SFMPanel(this::preview, this::direcoryChanged, start);
         panel.setOpaque(true); //content panes must be opaque
         this.setContentPane(panel);
 
@@ -79,6 +79,12 @@ public class SFMWindow extends JFrame {
         } catch (IOException e1) {
             e1.printStackTrace();
         }
+    }
+
+    private void direcoryChanged(FMElementCollection dir) {
+        // TODO: Window title crops end of path, but better to crop start!
+        // Maybe it will be better to create some status bar
+        this.setTitle(dir.path());
     }
 
     private Component findPreview(File file) throws IOException {

@@ -25,12 +25,14 @@ public class DirInZip implements FMEnterable {
     private final Map<String, FMElement> elements = new HashMap<>();
 
     private final Supplier<FMElementCollection> exitPoint;
+    private final String path;
     private final String name;
     // needs to close ZIP archive on exit
     private final ZipFile zip;
 
-    private DirInZip(Supplier<FMElementCollection> exitPoint, String name, ZipFile zip) {
+    private DirInZip(Supplier<FMElementCollection> exitPoint, String path, String name, ZipFile zip) {
         this.exitPoint = exitPoint;
+        this.path = path;
         this.name = name;
         this.zip = zip;
     }
@@ -69,15 +71,28 @@ public class DirInZip implements FMEnterable {
                 }
                 return exitPoint.get();
             }
+            @Override
+            public String path() {
+                return path;
+            }
         };
         res.add(new ParentDirectory(r, exitPoint));
         return r;
     }
 
-    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint) {
+    private static String constructPath(List<String> path) {
+        StringBuffer buf = new StringBuffer();
+        for(String part : path) {
+            buf.append('/');
+            buf.append(part);
+        }
+        return buf.toString();
+    }
+
+    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath) {
         Enumeration<? extends ZipEntry> entries = zip.entries();
 
-        DirInZip root = new DirInZip(exitPoint, "", zip);
+        DirInZip root = new DirInZip(exitPoint, parentPath, "", zip);
 
         Recursive<Function<List<String>, DirInZip>> r = new Recursive<>();
         r.func = (List<String> path) -> {
@@ -86,7 +101,8 @@ public class DirInZip implements FMEnterable {
             int last = path.size() - 1;
             DirInZip prev = r.func.apply(path.subList(0, last));
             String name = path.get(last);
-            FMElement res = prev.elements.computeIfAbsent(name, k -> new DirInZip(() -> prev.enter(), name, null));
+            String pathStr = parentPath + constructPath(path);
+            FMElement res = prev.elements.computeIfAbsent(name, k -> new DirInZip(() -> prev.enter(), pathStr, name, null));
             if (res instanceof DirInZip)
                 return (DirInZip)res;
             else
@@ -105,7 +121,7 @@ public class DirInZip implements FMEnterable {
             String name = list.get(last);
             DirInZip dir = pathToDir.apply(dirPath);
             FileInZip z = new FileInZip(zip, elem, name);
-            FMElement e = FMUtils.filterElement(z, () -> dir.enter());
+            FMElement e = FMUtils.filterElement(z, () -> dir.enter(), parentPath + constructPath(dirPath));
             dir.elements.put(name, e);
         }
         return root;

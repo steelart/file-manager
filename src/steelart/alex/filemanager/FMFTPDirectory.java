@@ -101,13 +101,18 @@ public class FMFTPDirectory implements FMEnterable  {
             public Collection<FMElement> content() {
                 return content;
             }
+
+            @Override
+            public String path() {
+                return "ftp://" + client.getRemoteAddress().getHostName() + path;
+            }
         };
         FTPFile[] ftpFiles = client.listFiles(path);
         for (FTPFile ftpFile : ftpFiles) {
             // Check if FTPFile is a regular file
             if (ftpFile.getType() == FTPFile.FILE_TYPE) {
                 FMFTPFile fmFtpFile = new FMFTPFile(path, ftpFile, client);
-                FMElement e = FMUtils.filterElement(fmFtpFile, () -> res);
+                FMElement e = FMUtils.filterElement(fmFtpFile, () -> res, res.path());
                 content.add(e);
             }
             if (ftpFile.getType() == FTPFile.DIRECTORY_TYPE) {

@@ -28,9 +28,9 @@ public class FMUtils {
         return sorted;
     }
 
-    public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint) {
+    public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint, String parentPath) {
         if (e.name().endsWith(".zip") || e.name().endsWith(".jar")) {
-            return new FMZipFile(e, exitPoint);
+            return new FMZipFile(e, exitPoint, parentPath);
         } else {
             return e;
         }

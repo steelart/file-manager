@@ -40,15 +40,17 @@ public class SFMPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private final Consumer<FMElement> previewAction;
+    private final Consumer<FMElementCollection> dirChangedAction;
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
     private FMElementCollection curDir;
     private List<FMElement> elements;
 
-    public SFMPanel(Consumer<FMElement> previewAction, FMElementCollection start) {
+    public SFMPanel(Consumer<FMElement> previewAction, Consumer<FMElementCollection> dirChangedAction, FMElementCollection start) {
         super(new GridLayout(1,0));
         this.previewAction = previewAction;
+        this.dirChangedAction = dirChangedAction;
 
         resetTable(start);
     }
@@ -215,6 +217,7 @@ public class SFMPanel extends JPanel {
 
     public void enterNewDir(FMElementCollection newDir) {
         resetTable(newDir);
+        dirChangedAction.accept(newDir);
         repaint();
     }
 

@@ -35,6 +35,10 @@ public class RegularDirectory implements FMEnterable {
             public FMElementCollection leaveDir() {
                 return null;
             }
+            @Override
+            public String path() {
+                return dir.getPath();
+            }
         };
         File p = dir.getParentFile();
         if (p != null)
@@ -42,7 +46,7 @@ public class RegularDirectory implements FMEnterable {
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
                 RegularFile rf = new RegularFile(file);
-                FMElement e = FMUtils.filterElement(rf, () -> this.enter());
+                FMElement e = FMUtils.filterElement(rf, () -> this.enter(), dir.getPath());
                 elements.add(e);
             } else if (file.isDirectory()) {
                 elements.add(new RegularDirectory(file));

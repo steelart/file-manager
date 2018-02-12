@@ -15,10 +15,12 @@ import java.util.zip.ZipFile;
 public class FMZipFile implements FMEnterable {
     private final FMElement element;
     private final Supplier<FMElementCollection> exitPoint;
+    private final String parentPath;
 
-    public FMZipFile(FMElement element, Supplier<FMElementCollection> exitPoint) {
+    public FMZipFile(FMElement element, Supplier<FMElementCollection> exitPoint, String parentPath) {
         this.element = element;
         this.exitPoint = exitPoint;
+        this.parentPath = parentPath;
     }
 
     @Override
@@ -37,7 +39,7 @@ public class FMZipFile implements FMEnterable {
         try (FileProvider profider = element.requestFile()) {
             File file = profider.get();
             zip = new ZipFile(file);
-            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint);
+            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name());
             return dir.enter();
         } catch (IOException e) {
             e.printStackTrace();
