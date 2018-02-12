@@ -22,7 +22,6 @@ import javax.swing.JPanel;
 import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMElementCollection;
-import steelart.alex.filemanager.FMFTPDirectory;
 import steelart.alex.filemanager.FileProvider;
 import steelart.alex.filemanager.api.ContentProvider;
 import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
@@ -110,25 +109,21 @@ public class SFMWindow extends JFrame {
     }
 
     private void addFtpServerMenuItem(JMenu fileMenu) {
-        JMenuItem ftpServer = new JMenuItem("FTP server");
+        JMenuItem ftpServer = new JMenuItem("goto");
         fileMenu.add(ftpServer);
         ftpServer.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String s = (String)JOptionPane.showInputDialog(
                                     SFMWindow.this,
-                                    "Choose FTP server",
-                                    "Choose FTP server",
+                                    "Specify path",
+                                    "Specify path",
                                     JOptionPane.PLAIN_MESSAGE,
                                     null,
                                     null,
-                                    "");
+                                    panel.getCurrentDirectory().path());
 
                 if (s != null) {
-                    FMElementCollection cur = panel.getCurrentDirectory();
-                    FMElementCollection directory = FMFTPDirectory.enterFtpServer(s, () -> cur);
-                    if (directory != null) {
-                        panel.enterNewDir(directory);
-                    }
+                    panel.resetDir(s);
                 }
             }
         });

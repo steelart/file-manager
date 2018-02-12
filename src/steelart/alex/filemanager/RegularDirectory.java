@@ -15,7 +15,7 @@ public class RegularDirectory implements FMEnterable {
     private final File dir;
 
     public RegularDirectory(File file) {
-        this.dir = file;
+        this.dir = file.getAbsoluteFile();
     }
 
     @Override

@@ -215,7 +215,17 @@ public class SFMPanel extends JPanel {
         return element;
     }
 
-    public void enterNewDir(FMElementCollection newDir) {
+    public void resetDir(String s) {
+        FMElementCollection directory = FMUtils.goToPath(s);
+        if (directory == null) {
+            //TODO: report about error!
+            return;
+        }
+        while (curDir != null) curDir = curDir.leaveDir();
+        enterNewDir(directory);
+    }
+
+    private void enterNewDir(FMElementCollection newDir) {
         resetTable(newDir);
         dirChangedAction.accept(newDir);
         repaint();

@@ -1,8 +1,14 @@
 package steelart.alex.filemanager;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -13,6 +19,8 @@ import java.util.function.Supplier;
 * @date 2 February 2018
 */
 public class FMUtils {
+    private static final String FTP_PROTOCOL_PREFIX = "ftp://";
+
     // TODO: it could be made as parameter (whether we need to use directory sort or not)
     // NOTE: used reverse e1 and e2:
     private static final Comparator<FMElement> dirComp = (e1, e2) -> Boolean.compare(isDir(e2), isDir(e1));
@@ -26,6 +34,62 @@ public class FMUtils {
         Comparator<FMElement> comparator = property.comparator(reversed);
         sorted.sort(parentDirComp.thenComparing(dirComp).thenComparing(comparator));
         return sorted;
+    }
+
+    public static FMElementCollection goToPath(String path) {
+        if (path.startsWith(FTP_PROTOCOL_PREFIX)) {
+
+            String withoutPrefix = path.substring(FTP_PROTOCOL_PREFIX.length());
+            if (withoutPrefix.isEmpty()) {
+                System.err.println("Empty adress");
+                return null;
+            }
+
+            String[] parts = withoutPrefix.split("/");
+            List<String> list = Arrays.asList(parts);
+            String hostName = list.get(0);
+            List<String> dirPath = list.subList(1, list.size());
+
+            FMElementCollection host = FMFTPDirectory.enterFtpServer(hostName, null);
+            return goToPath(host, dirPath);
+        } else {
+            File dir = new File(path);
+            List<String> sufix = new LinkedList<>();
+            while (!dir.isDirectory()) {
+                sufix.add(0, dir.getName());
+                dir = dir.getParentFile();
+                if (dir == null) {
+                    Path currentRelativePath = Paths.get("");
+                    String curDirPath = currentRelativePath.toAbsolutePath().toString();
+                    dir = new File(curDirPath);
+                    if (path.isEmpty())
+                        sufix = Collections.emptyList();
+                    break;
+                }
+            }
+            FMEnterable enterable = new RegularDirectory(dir);
+            FMElementCollection directory = enterable.enter();
+            return goToPath(directory, sufix);
+        }
+    }
+    private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath) {
+        if (dirPath.isEmpty())
+            return cur;
+        String name = dirPath.get(0);
+        for (FMElement e : cur.content()) {
+            if (e.name().equals(name)) {
+                FMEnterable enterable = e.asEnterable();
+                if (enterable != null) {
+                    FMElementCollection nextDir = enterable.enter();
+                    return goToPath(nextDir, dirPath.subList(1, dirPath.size()));
+                } else {
+                    System.err.println("Could not enter file '" + name + "' at " + cur.path());
+                    return cur;
+                }
+            }
+        }
+        System.err.println("No file or directory with name '" + name + "' at " + cur.path());
+        return cur;
     }
 
     public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint, String parentPath) {

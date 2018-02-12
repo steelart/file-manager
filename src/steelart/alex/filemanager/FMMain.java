@@ -1,10 +1,5 @@
 package steelart.alex.filemanager;
 
-
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import steelart.alex.filemanager.swing.SFMWindow;
 
 /**
@@ -16,11 +11,7 @@ import steelart.alex.filemanager.swing.SFMWindow;
 public class FMMain {
     public static void main(String[] args) {
         // There could be command line arguments parsing
-        Path currentRelativePath = Paths.get("");
-        String curDirPath = currentRelativePath.toAbsolutePath().toString();
-        FMEnterable enterable = new RegularDirectory(new File(curDirPath));
-        FMElementCollection directory = enterable.enter();
-        SFMWindow app = new SFMWindow(directory);
+        SFMWindow app = new SFMWindow(FMUtils.goToPath(""));
         app.setVisible(true);
     }
 }
