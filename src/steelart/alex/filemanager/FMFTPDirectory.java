@@ -65,6 +65,7 @@ public class FMFTPDirectory implements FMEnterable  {
             client.connect(server);
             client.enterLocalPassiveMode();
             client.login("anonymous", "");
+            client.setFileType(FTPClient.BINARY_FILE_TYPE);
             if (client.isConnected()) {
                 return constructFromCurFtpDir("", client, exitPoint, true);
             }
@@ -105,7 +106,9 @@ public class FMFTPDirectory implements FMEnterable  {
         for (FTPFile ftpFile : ftpFiles) {
             // Check if FTPFile is a regular file
             if (ftpFile.getType() == FTPFile.FILE_TYPE) {
-                content.add(new FMFTPFile(path, ftpFile, client));
+                FMFTPFile fmFtpFile = new FMFTPFile(path, ftpFile, client);
+                FMElement e = FMUtils.filterElement(fmFtpFile, () -> res);
+                content.add(e);
             }
             if (ftpFile.getType() == FTPFile.DIRECTORY_TYPE) {
                 content.add(new FMFTPDirectory(path, ftpFile.getName(), client, () -> res));
