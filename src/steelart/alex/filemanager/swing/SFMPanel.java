@@ -23,10 +23,15 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import steelart.alex.filemanager.FMElementCollection;
+import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
 import steelart.alex.filemanager.FileProvider;
+import steelart.alex.filemanager.OperationInterrupt;
 import steelart.alex.filemanager.ProgressTracker;
+import steelart.alex.filemanager.ProxyProgressTracker;
+import steelart.alex.filemanager.api.ContentProvider;
+import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMEnterable;
 
@@ -37,9 +42,16 @@ import steelart.alex.filemanager.FMEnterable;
  * @date 26 January 2018
  */
 public class SFMPanel extends JPanel {
+    @FunctionalInterface
+    private static interface PossibleLongTask {
+        void apply(ProxyProgressTracker tracker) throws IOException;
+    }
+
     private static final long serialVersionUID = 1L;
 
     private final FMPanelListener listener;
+
+    private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingImagePreviewPlugin(), new SwingTextPreviewPlugin());
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private volatile JTable table;
@@ -181,32 +193,82 @@ public class SFMPanel extends JPanel {
 
     private void previewAction() {
         FMElement element = getCurElement();
-        if (element != null)
-            listener.previewAction(element);
+        if (element == null)
+            return;
+        performPossibleLongTask((tracker) -> previewAction(element, tracker));
     }
+
+    private void previewAction(FMElement element, ProxyProgressTracker tracker) throws IOException {
+        try (FileProvider provider = element.requestFile(tracker)) {
+            if (provider == null)
+                return;
+            File file = provider.get();
+            // This could be long operation without possible progress bar...
+            // TODO: implement interruptible preview
+            Component preview = findPreview(file);
+            // So lets check the process was not interrupted
+            // If it was - just ignore preview result for now...
+            if (preview != null && !tracker.isInterrupted()) {
+                listener.previewAction(preview);
+            }
+        }
+    }
+
+    private Component findPreview(File file) throws IOException {
+        ContentProvider provider = new ContentProviderImpl(file);
+        for (SwingPreviewPlugin p : plugins) {
+            Component preview = p.getPreview(provider);
+            if (preview != null)
+                return preview;
+        }
+        return null;
+    }
+
 
     private void enterAction() {
         FMElement element = getCurElement();
         if (element == null) return;
         FMEnterable enterable = element.asEnterable();
         if (enterable != null) {
-            enterDirAction(enterable);
+            performPossibleLongTask((tracker) -> enterNewDir(enterable.enter(tracker)));
         } else {
-            try (FileProvider provider = element.requestFile(ProgressTracker.empty())) {
-                File file = provider.get();
-                Desktop.getDesktop().open(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            performPossibleLongTask((tracker) -> openWithStandardProgram(element, tracker));
         }
     }
 
-    private void enterDirAction(FMEnterable enterable) {
+    private void openWithStandardProgram(FMElement element, ProgressTracker tracker) throws IOException {
+        try (FileProvider provider = element.requestFile(tracker)) {
+            File file = provider.get();
+            Desktop.getDesktop().open(file);
+        }
+    }
+
+    private void performPossibleLongTask(PossibleLongTask task) {
+        ProxyProgressTracker tracker = new ProxyProgressTracker();
+        listener.startPossibleLongOperation();
+        Runnable runnable = new Runnable() {
+            public void run() {
+                try {
+                    task.apply(tracker);
+                } catch (OperationInterrupt e) {
+                    // just ignore it
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (!tracker.isInterrupted())
+                        listener.endPossibleLongOperation();
+                }
+            }
+        };
+        new Thread(runnable).start();
+        // TODO: add signal to wake up for fast operations!
         try {
-            enterNewDir(enterable.enter(ProgressTracker.empty()));
-        } catch (IOException e) {
+            //give time for fast operations
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        listener.enterWaitMode(tracker);
     }
 
     private FMElement getCurElement() {
@@ -220,12 +282,11 @@ public class SFMPanel extends JPanel {
     }
 
     public void resetDir(String s) {
-        FMElementCollection directory = null;
-        try {
-            directory = FMUtils.goToPath(s, ProgressTracker.empty());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        performPossibleLongTask((tracker) -> resetDir(s, tracker));
+    }
+
+    private void resetDir(String s, ProgressTracker tracker) throws IOException {
+        FMElementCollection directory = FMUtils.goToPath(s, tracker);
         if (directory == null) {
             return;
         }
@@ -235,7 +296,7 @@ public class SFMPanel extends JPanel {
 
     private void enterNewDir(FMElementCollection newDir) {
         resetTable(newDir);
-        listener.directoryChangedNotify(newDir);
+        listener.directoryChangedNotify(newDir.path());
         repaint();
     }
 

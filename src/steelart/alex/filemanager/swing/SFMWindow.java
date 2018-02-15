@@ -7,25 +7,20 @@ import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 
-import steelart.alex.filemanager.ContentProviderImpl;
-import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMElementCollection;
-import steelart.alex.filemanager.FileProvider;
+import steelart.alex.filemanager.OperationInterrupt;
 import steelart.alex.filemanager.ProgressTracker;
-import steelart.alex.filemanager.api.ContentProvider;
-import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
+import steelart.alex.filemanager.ProxyProgressTracker;
 
 
 /**
@@ -37,10 +32,12 @@ import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 public class SFMWindow extends JFrame implements FMPanelListener {
     private static final long serialVersionUID = 1L;
 
-    private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingImagePreviewPlugin(), new SwingTextPreviewPlugin());
-
     private final SFMPanel panel;
     private boolean previewMode = false;
+
+    /** It becomes true when file manage starts some possible long operation */
+    private boolean possibleLongOperationStarted = false;
+    private ProxyProgressTracker waitTracker = null;
 
     public SFMWindow(FMElementCollection start) {
         super(start.path());
@@ -61,45 +58,99 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         addHookForEsc();
     }
 
-    @Override
-    public void previewAction(FMElement element) {
-        try (FileProvider provider = element.requestFile(ProgressTracker.empty())) {
-            if (provider == null)
-                return;
-            File file = provider.get();
-            Component preview = findPreview(file);
-            if (preview != null) {
-                JPanel previewPanel = new JPanel(new GridLayout(1,0));
-                previewPanel.add(preview);
-                this.setContentPane(previewPanel);
-                previewMode = true;
-                revalidate();
-                repaint();
-                preview.requestFocus();
-            }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
-    }
+    //-------------------------//
+    //--State related methods--//
+    //-------------------------//
 
+    // For now this method is not needed synchronization
     @Override
-    public void directoryChangedNotify(FMElementCollection dir) {
+    public void directoryChangedNotify(String path) {
         // TODO: Window title crops end of path, but better to crop start!
         // Maybe it will be better to create some status bar
-        this.setTitle(dir.path());
+        this.setTitle(path);
     }
 
-    private Component findPreview(File file) throws IOException {
-        ContentProvider provider = new ContentProviderImpl(file);
-        for (SwingPreviewPlugin p : plugins) {
-            Component preview = p.getPreview(provider);
-            if (preview != null)
-                return preview;
+    private synchronized void changeProgress(JProgressBar progressBar, long cur, long whole) throws OperationInterrupt {
+        int percent = (int)(100*cur/whole);
+        progressBar.setValue(percent);
+        if (waitTracker == null || waitTracker.isInterrupted()) {
+            throw new OperationInterrupt();
         }
-        System.out.println("No preview for file: " + file);
-        System.out.println("Mime type is: " + provider.getMimeType());
-        return null;
     }
+
+    public synchronized void startPossibleLongOperation() {
+        possibleLongOperationStarted = true;
+    }
+
+    public synchronized void endPossibleLongOperation() {
+        possibleLongOperationStarted = false;
+        if (waitTracker != null) {
+            waitTracker = null;
+            restorePanel();
+        }
+    }
+
+    @Override
+    public synchronized void enterWaitMode(ProxyProgressTracker tracker) {
+        if (!possibleLongOperationStarted) {
+            // operation was fast
+            return;
+        }
+        waitTracker = tracker;
+
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setValue(0);
+        progressBar.setStringPainted(true);
+
+        JButton stopButton = new JButton("Stop");
+        stopButton.addActionListener((e) -> interruptWaiting());
+
+        JPanel progressPanel = new JPanel();
+        progressPanel.add(progressBar);
+        progressPanel.add(stopButton);
+        this.setContentPane(progressPanel);
+        revalidate();
+        repaint();
+
+        waitTracker.setTracker(new ProgressTracker() {
+            @Override
+            public void currentProgress(long cur, long whole) throws OperationInterrupt {
+                changeProgress(progressBar, cur, whole);
+            }
+        });
+    }
+
+    @Override
+    public synchronized void previewAction(Component preview) {
+        possibleLongOperationStarted = false;
+        waitTracker = null;
+
+        JPanel previewPanel = new JPanel(new GridLayout(1,0));
+        previewPanel.add(preview);
+        this.setContentPane(previewPanel);
+        previewMode = true;
+        revalidate();
+        repaint();
+        preview.requestFocus();
+    }
+
+    private synchronized void restorePanel() {
+        this.setContentPane(panel);
+        previewMode = false;
+        repaint();
+        panel.requestFocus();
+    }
+
+    private synchronized void interruptWaiting() {
+        if (waitTracker == null)
+            return;
+        waitTracker.interrupted();
+        endPossibleLongOperation();
+    }
+
+    //--------------------------//
+    //--Initialization methods--//
+    //--------------------------//
 
     private void addExitMenuItem(JMenu fileMenu) {
         JMenuItem exitItem = new JMenuItem("Exit");
@@ -141,15 +192,16 @@ public class SFMWindow extends JFrame implements FMPanelListener {
                 switch (code) {
                 case KeyEvent.VK_ESCAPE:
                     if (previewMode) {
-                        SFMWindow.this.setContentPane(panel);
-                        previewMode = false;
-                        repaint();
-                        panel.requestFocus();
+                        restorePanel();
+                    }
+                    if (waitTracker != null) {
+                        interruptWaiting();
                     }
                 break;
                 }
                 return false;
             }
+
         });
     }
 }
