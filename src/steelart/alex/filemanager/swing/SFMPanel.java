@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -40,18 +39,16 @@ import steelart.alex.filemanager.FMEnterable;
 public class SFMPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
-    private final Consumer<FMElement> previewAction;
-    private final Consumer<FMElementCollection> dirChangedAction;
+    private final FMPanelListener listener;
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private volatile JTable table;
     private volatile FMElementCollection curDir;
     private volatile List<FMElement> elements;
 
-    public SFMPanel(Consumer<FMElement> previewAction, Consumer<FMElementCollection> dirChangedAction, FMElementCollection start) {
+    public SFMPanel(FMPanelListener listener, FMElementCollection start) {
         super(new GridLayout(1,0));
-        this.previewAction = previewAction;
-        this.dirChangedAction = dirChangedAction;
+        this.listener = listener;
 
         resetTable(start);
     }
@@ -185,7 +182,7 @@ public class SFMPanel extends JPanel {
     private void previewAction() {
         FMElement element = getCurElement();
         if (element != null)
-            previewAction.accept(element);
+            listener.previewAction(element);
     }
 
     private void enterAction() {
@@ -238,7 +235,7 @@ public class SFMPanel extends JPanel {
 
     private void enterNewDir(FMElementCollection newDir) {
         resetTable(newDir);
-        dirChangedAction.accept(newDir);
+        listener.directoryChangedNotify(newDir);
         repaint();
     }
 

@@ -34,7 +34,7 @@ import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
  * @author Alexey Merkulov
  * @date 26 January 2018
  */
-public class SFMWindow extends JFrame {
+public class SFMWindow extends JFrame implements FMPanelListener {
     private static final long serialVersionUID = 1L;
 
     private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingImagePreviewPlugin(), new SwingTextPreviewPlugin());
@@ -47,7 +47,7 @@ public class SFMWindow extends JFrame {
         this.setBounds(100,100,800,500);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        panel = new SFMPanel(this::preview, this::direcoryChanged, start);
+        panel = new SFMPanel(this, start);
         panel.setOpaque(true); //content panes must be opaque
         this.setContentPane(panel);
 
@@ -61,7 +61,8 @@ public class SFMWindow extends JFrame {
         addHookForEsc();
     }
 
-    private void preview(FMElement element) {
+    @Override
+    public void previewAction(FMElement element) {
         try (FileProvider provider = element.requestFile(ProgressTracker.empty())) {
             if (provider == null)
                 return;
@@ -81,7 +82,8 @@ public class SFMWindow extends JFrame {
         }
     }
 
-    private void direcoryChanged(FMElementCollection dir) {
+    @Override
+    public void directoryChangedNotify(FMElementCollection dir) {
         // TODO: Window title crops end of path, but better to crop start!
         // Maybe it will be better to create some status bar
         this.setTitle(dir.path());
