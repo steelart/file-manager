@@ -35,17 +35,17 @@ public class FMFTPFile implements FMElement {
     }
 
     @Override
-    public FileProvider requestFile() {
-        try {
-            InputStream is = client.retrieveFileStream(path + '/' + name());
-            FileProvider res = FileProvider.tmpFileForInputStream(is, name());
-            if (!client.completePendingCommand()) {
-                return null;
-            }
+    public FileProvider requestFile(ProgressTracker progress) throws IOException {
+        String fullPath = path + '/' + name();
+        FileProvider res = null;
+        try (InputStream is = client.retrieveFileStream(fullPath)) {
+            res = FileProvider.tmpFileForInputStream(is, name(), progress, ftpFile.getSize());
             return res;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+        } finally {
+            boolean completePendingCommand = client.completePendingCommand();
+            if (res != null && !completePendingCommand) {
+                throw new IOException("Could not extract file from " + FMFTPDirectory.ftpPath(fullPath, client));
+            }
         }
     }
 }

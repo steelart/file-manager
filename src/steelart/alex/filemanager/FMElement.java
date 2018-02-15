@@ -1,5 +1,6 @@
 package steelart.alex.filemanager;
 
+import java.io.IOException;
 
 /**
  * File manager element in panel (usually it is some file or directory)
@@ -18,6 +19,7 @@ public interface FMElement {
         return null;
     }
 
-    /** @return file provider or null if this element is a directory */
-    public FileProvider requestFile();
+    /** @param progress TODO
+     * @return file provider or null if this element is a directory */
+    public FileProvider requestFile(ProgressTracker progress) throws IOException;
 }

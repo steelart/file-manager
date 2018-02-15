@@ -43,7 +43,7 @@ public class DirInZip implements FMEnterable {
     }
 
     @Override
-    public FileProvider requestFile() {
+    public FileProvider requestFile(ProgressTracker progress) {
         return null;
     }
 
@@ -53,7 +53,11 @@ public class DirInZip implements FMEnterable {
     }
 
     @Override
-    public FMElementCollection enter() {
+    public FMElementCollection enter(ProgressTracker progress) {
+        return simpleEnter();
+    }
+
+    public FMElementCollection simpleEnter() {
         ArrayList<FMElement> res = new ArrayList<>(elements.values());
         FMElementCollection r = new FMElementCollection() {
             @Override
@@ -89,7 +93,7 @@ public class DirInZip implements FMEnterable {
         return buf.toString();
     }
 
-    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath) {
+    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath, ProgressTracker progress) throws OperationInterrupt {
         Enumeration<? extends ZipEntry> entries = zip.entries();
 
         DirInZip root = new DirInZip(exitPoint, parentPath, "", zip);
@@ -102,7 +106,7 @@ public class DirInZip implements FMEnterable {
             DirInZip prev = r.func.apply(path.subList(0, last));
             String name = path.get(last);
             String pathStr = parentPath + constructPath(path);
-            FMElement res = prev.elements.computeIfAbsent(name, k -> new DirInZip(() -> prev.enter(), pathStr, name, null));
+            FMElement res = prev.elements.computeIfAbsent(name, k -> new DirInZip(() -> prev.simpleEnter(), pathStr, name, null));
             if (res instanceof DirInZip)
                 return (DirInZip)res;
             else
@@ -110,7 +114,10 @@ public class DirInZip implements FMEnterable {
         };
         Function<List<String>, DirInZip> pathToDir = r.func;
 
+        int size = zip.size();
+        int curNum = 0;
         while (entries.hasMoreElements()) {
+            progress.currentProgress(curNum, size);
             ZipEntry elem = entries.nextElement();
             if (elem.isDirectory())
                 continue;
@@ -121,8 +128,9 @@ public class DirInZip implements FMEnterable {
             String name = list.get(last);
             DirInZip dir = pathToDir.apply(dirPath);
             FileInZip z = new FileInZip(zip, elem, name);
-            FMElement e = FMUtils.filterElement(z, () -> dir.enter(), parentPath + constructPath(dirPath));
+            FMElement e = FMUtils.filterElement(z, () -> dir.simpleEnter(), parentPath + constructPath(dirPath));
             dir.elements.put(name, e);
+            curNum++;
         }
         return root;
     }

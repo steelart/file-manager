@@ -23,6 +23,7 @@ import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMElementCollection;
 import steelart.alex.filemanager.FileProvider;
+import steelart.alex.filemanager.ProgressTracker;
 import steelart.alex.filemanager.api.ContentProvider;
 import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 
@@ -61,7 +62,7 @@ public class SFMWindow extends JFrame {
     }
 
     private void preview(FMElement element) {
-        try (FileProvider provider = element.requestFile()) {
+        try (FileProvider provider = element.requestFile(ProgressTracker.empty())) {
             if (provider == null)
                 return;
             File file = provider.get();

@@ -28,7 +28,7 @@ public class RegularFile implements FMElement {
     }
 
     @Override
-    public FileProvider requestFile() {
+    public FileProvider requestFile(ProgressTracker progress) {
         return FileProvider.fromFile(file);
     }
 }

@@ -27,6 +27,7 @@ import steelart.alex.filemanager.FMElementCollection;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
 import steelart.alex.filemanager.FileProvider;
+import steelart.alex.filemanager.ProgressTracker;
 import steelart.alex.filemanager.FMElement;
 import steelart.alex.filemanager.FMEnterable;
 
@@ -43,9 +44,9 @@ public class SFMPanel extends JPanel {
     private final Consumer<FMElementCollection> dirChangedAction;
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
-    private JTable table;
-    private FMElementCollection curDir;
-    private List<FMElement> elements;
+    private volatile JTable table;
+    private volatile FMElementCollection curDir;
+    private volatile List<FMElement> elements;
 
     public SFMPanel(Consumer<FMElement> previewAction, Consumer<FMElementCollection> dirChangedAction, FMElementCollection start) {
         super(new GridLayout(1,0));
@@ -192,16 +193,22 @@ public class SFMPanel extends JPanel {
         if (element == null) return;
         FMEnterable enterable = element.asEnterable();
         if (enterable != null) {
-            enterNewDir(enterable.enter());
+            enterDirAction(enterable);
         } else {
-            try (FileProvider provider = element.requestFile()) {
+            try (FileProvider provider = element.requestFile(ProgressTracker.empty())) {
                 File file = provider.get();
-                try {
-                    Desktop.getDesktop().open(file);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                Desktop.getDesktop().open(file);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+        }
+    }
+
+    private void enterDirAction(FMEnterable enterable) {
+        try {
+            enterNewDir(enterable.enter(ProgressTracker.empty()));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -216,9 +223,13 @@ public class SFMPanel extends JPanel {
     }
 
     public void resetDir(String s) {
-        FMElementCollection directory = FMUtils.goToPath(s);
+        FMElementCollection directory = null;
+        try {
+            directory = FMUtils.goToPath(s, ProgressTracker.empty());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (directory == null) {
-            //TODO: report about error!
             return;
         }
         while (curDir != null) curDir = curDir.leaveDir();

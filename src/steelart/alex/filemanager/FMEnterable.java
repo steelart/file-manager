@@ -1,5 +1,7 @@
 package steelart.alex.filemanager;
 
+import java.io.IOException;
+
 /**
  * A file manager element in which it is possible to enter.
  * Usually it is some directory.
@@ -13,8 +15,9 @@ public interface FMEnterable extends FMElement {
         return this;
     }
 
-    /** Calculate directory content and enter to it */
-    public FMElementCollection enter();
+    /** Calculate directory content and enter to it
+     * @param progress TODO*/
+    public FMElementCollection enter(ProgressTracker progress) throws IOException;
 
     /** @return true iff this element is a directory */
     public boolean isDirectory();

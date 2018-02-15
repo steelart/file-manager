@@ -34,22 +34,29 @@ public class FMZipFile implements FMEnterable {
     }
 
     @Override
-    public FMElementCollection enter() {
-        ZipFile zip;
-        try (FileProvider profider = element.requestFile()) {
+    public FMElementCollection enter(ProgressTracker progress) throws IOException {
+        ZipFile zip = null;
+        try (FileProvider profider = element.requestFile(progress)) {
             File file = profider.get();
             zip = new ZipFile(file);
-            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name());
-            return dir.enter();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Some problem in zip file");
+            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name(), progress);
+            FMElementCollection res = dir.simpleEnter();
+            zip = null;
+            return res;
+        } finally {
+            if (zip != null) {
+                try {
+                    zip.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
         }
     }
 
     @Override
-    public FileProvider requestFile() {
-        return element.requestFile();
+    public FileProvider requestFile(ProgressTracker progress) throws IOException {
+        return element.requestFile(progress);
     }
 
     @Override

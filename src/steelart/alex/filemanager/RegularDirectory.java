@@ -24,7 +24,7 @@ public class RegularDirectory implements FMEnterable {
     }
 
     @Override
-    public FMElementCollection enter() {
+    public FMElementCollection enter(ProgressTracker progress) {
         Set<FMElement> elements = new HashSet<FMElement>();
         FMElementCollection fmDirectory = new FMElementCollection() {
             @Override
@@ -42,11 +42,11 @@ public class RegularDirectory implements FMEnterable {
         };
         File p = dir.getParentFile();
         if (p != null)
-            elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter()));
+            elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter(ProgressTracker.empty())));
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
                 RegularFile rf = new RegularFile(file);
-                FMElement e = FMUtils.filterElement(rf, () -> this.enter(), dir.getPath());
+                FMElement e = FMUtils.filterElement(rf, () -> this.enter(ProgressTracker.empty()), dir.getPath());
                 elements.add(e);
             } else if (file.isDirectory()) {
                 elements.add(new RegularDirectory(file));
@@ -61,7 +61,7 @@ public class RegularDirectory implements FMEnterable {
     }
 
     @Override
-    public FileProvider requestFile() {
+    public FileProvider requestFile(ProgressTracker progress) {
         return null;
     }
 

@@ -28,13 +28,13 @@ public class ParentDirectory implements FMEnterable {
     }
 
     @Override
-    public FMElementCollection enter() {
+    public FMElementCollection enter(ProgressTracker progress) {
         cur.leaveDir();
         return exitPoint.get();
     }
 
     @Override
-    public FileProvider requestFile() {
+    public FileProvider requestFile(ProgressTracker progress) {
         return null;
     }
 

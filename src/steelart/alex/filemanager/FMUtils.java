@@ -1,6 +1,7 @@
 package steelart.alex.filemanager;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,13 +37,12 @@ public class FMUtils {
         return sorted;
     }
 
-    public static FMElementCollection goToPath(String path) {
+    public static FMElementCollection goToPath(String path, ProgressTracker tracker) throws IOException {
         if (path.startsWith(FTP_PROTOCOL_PREFIX)) {
 
             String withoutPrefix = path.substring(FTP_PROTOCOL_PREFIX.length());
             if (withoutPrefix.isEmpty()) {
-                System.err.println("Empty adress");
-                return null;
+                throw new IOException("Empty FTP address");
             }
 
             String[] parts = withoutPrefix.split("/");
@@ -51,7 +51,7 @@ public class FMUtils {
             List<String> dirPath = list.subList(1, list.size());
 
             FMElementCollection host = FMFTPDirectory.enterFtpServer(hostName, null);
-            return goToPath(host, dirPath);
+            return goToPath(host, dirPath, tracker);
         } else {
             File dir = new File(path);
             List<String> sufix = new LinkedList<>();
@@ -68,11 +68,11 @@ public class FMUtils {
                 }
             }
             FMEnterable enterable = new RegularDirectory(dir);
-            FMElementCollection directory = enterable.enter();
-            return goToPath(directory, sufix);
+            FMElementCollection directory = enterable.enter(tracker);
+            return goToPath(directory, sufix, tracker);
         }
     }
-    private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath) {
+    private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath, ProgressTracker tracker) throws IOException {
         if (dirPath.isEmpty())
             return cur;
         String name = dirPath.get(0);
@@ -80,16 +80,14 @@ public class FMUtils {
             if (e.name().equals(name)) {
                 FMEnterable enterable = e.asEnterable();
                 if (enterable != null) {
-                    FMElementCollection nextDir = enterable.enter();
-                    return goToPath(nextDir, dirPath.subList(1, dirPath.size()));
+                    FMElementCollection nextDir = enterable.enter(tracker);
+                    return goToPath(nextDir, dirPath.subList(1, dirPath.size()), tracker);
                 } else {
-                    System.err.println("Could not enter file '" + name + "' at " + cur.path());
-                    return cur;
+                    throw new IOException("Could not enter file '" + name + "' at " + cur.path());
                 }
             }
         }
-        System.err.println("No file or directory with name '" + name + "' at " + cur.path());
-        return cur;
+        throw new IOException("No file or directory with name '" + name + "' at " + cur.path());
     }
 
     public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint, String parentPath) {

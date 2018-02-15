@@ -40,7 +40,7 @@ public class FMFTPDirectory implements FMEnterable  {
     }
 
     @Override
-    public FileProvider requestFile() {
+    public FileProvider requestFile(ProgressTracker progress) {
         return null;
     }
 
@@ -50,16 +50,11 @@ public class FMFTPDirectory implements FMEnterable  {
     }
 
     @Override
-    public FMElementCollection enter() {
-        try {
-            return constructFromCurFtpDir(path + '/' + name(), client, exitPoint, false);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    public FMElementCollection enter(ProgressTracker progress) throws IOException {
+        return constructFromCurFtpDir(path + '/' + name(), client, exitPoint, false);
     }
 
-    public static FMElementCollection enterFtpServer(String server, Supplier<FMElementCollection> exitPoint) {
+    public static FMElementCollection enterFtpServer(String server, Supplier<FMElementCollection> exitPoint) throws IOException {
         FTPClient client = new FTPClient();
         try {
             client.connect(server);
@@ -67,13 +62,14 @@ public class FMFTPDirectory implements FMEnterable  {
             client.login("anonymous", "");
             client.setFileType(FTPClient.BINARY_FILE_TYPE);
             if (client.isConnected()) {
-                return constructFromCurFtpDir("", client, exitPoint, true);
+                FMElementCollection res = constructFromCurFtpDir("", client, exitPoint, true);
+                client = null;
+                return res;
             }
             return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            disconnect(client);
-            return null;
+        } finally {
+            if (client != null)
+                disconnect(client);
         }
     }
 
@@ -104,7 +100,7 @@ public class FMFTPDirectory implements FMEnterable  {
 
             @Override
             public String path() {
-                return "ftp://" + client.getRemoteAddress().getHostName() + path;
+                return ftpPath(path, client);
             }
         };
         FTPFile[] ftpFiles = client.listFiles(path);
@@ -123,5 +119,9 @@ public class FMFTPDirectory implements FMEnterable  {
             content.add(new ParentDirectory(res, exitPoint));
         }
         return res;
+    }
+
+    public static String ftpPath(String path, FTPClient client) {
+        return "ftp://" + client.getRemoteAddress().getHostName() + path;
     }
 }
