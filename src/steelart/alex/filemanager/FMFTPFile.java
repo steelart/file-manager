@@ -39,7 +39,7 @@ public class FMFTPFile implements FMElement {
         String fullPath = path + '/' + name();
         FileProvider res = null;
         try (InputStream is = client.retrieveFileStream(fullPath)) {
-            res = FileProvider.tmpFileForInputStream(is, name(), progress, ftpFile.getSize());
+            res = TmpFileProvider.create(is, name(), progress, ftpFile.getSize());
             return res;
         } finally {
             boolean completePendingCommand = client.completePendingCommand();

@@ -240,6 +240,7 @@ public class SFMPanel extends JPanel {
         try (FileProvider provider = element.requestFile(tracker)) {
             File file = provider.get();
             Desktop.getDesktop().open(file);
+            provider.preserve();
         }
     }
 
