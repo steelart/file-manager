@@ -121,13 +121,14 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     }
 
     @Override
-    public synchronized void previewAction(Component preview) {
+    public synchronized void previewAction(Component preview, String title) {
         possibleLongOperationStarted = false;
         waitTracker = null;
 
         JPanel previewPanel = new JPanel(new GridLayout(1,0));
         previewPanel.add(preview);
         this.setContentPane(previewPanel);
+        this.setTitle(title);
         previewMode = true;
         revalidate();
         repaint();
@@ -137,6 +138,7 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     private synchronized void restorePanel() {
         this.setContentPane(panel);
         previewMode = false;
+        this.setTitle(panel.getCurrentDirectory().path());
         repaint();
         panel.requestFocus();
     }

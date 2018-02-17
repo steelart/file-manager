@@ -209,7 +209,7 @@ public class SFMPanel extends JPanel {
             // So lets check the process was not interrupted
             // If it was - just ignore preview result for now...
             if (preview != null && !tracker.isInterrupted()) {
-                listener.previewAction(preview);
+                listener.previewAction(preview, element.name());
             }
         }
     }

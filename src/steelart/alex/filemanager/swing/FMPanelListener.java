@@ -12,7 +12,7 @@ import steelart.alex.filemanager.ProxyProgressTracker;
  */
 public interface FMPanelListener {
     /** Ask about preview specified element */
-    public void previewAction(Component preview);
+    public void previewAction(Component preview, String title);
 
     /** Notify about current directory change */
     public void directoryChangedNotify(String path);
