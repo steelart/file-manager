@@ -39,6 +39,7 @@ public class FMZipFile implements FMEnterable {
         try (FileProvider profider = element.requestFile(progress)) {
             File file = profider.get();
             zip = new ZipFile(file);
+            progress.startPhase("Reading ZIP archive " + name(), true);
             DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name(), progress);
             FMElementCollection res = dir.simpleEnter();
             zip = null;

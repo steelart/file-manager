@@ -34,6 +34,7 @@ class FileInZip implements FMElement {
 
     @Override
     public FileProvider requestFile(ProgressTracker progress) throws IOException {
+        progress.startPhase("Extracting " + name(), true);
         try (InputStream is = zip.getInputStream(entry)) {
             return TmpFileProvider.create(is, name(), progress, entry.getSize());
         }

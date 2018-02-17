@@ -70,14 +70,6 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         this.setTitle(path);
     }
 
-    private synchronized void changeProgress(JProgressBar progressBar, long cur, long whole) throws OperationInterrupt {
-        int percent = (int)(100*cur/whole);
-        progressBar.setValue(percent);
-        if (waitTracker == null || waitTracker.isInterrupted()) {
-            throw new OperationInterrupt();
-        }
-    }
-
     public synchronized void startPossibleLongOperation() {
         possibleLongOperationStarted = true;
     }
@@ -90,6 +82,41 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         }
     }
 
+    private final class ProgressTrackerImplementation implements ProgressTracker {
+        private final JPanel progressPanel;
+        private final JProgressBar progressBar;
+
+        private ProgressTrackerImplementation(JPanel progressPanel) {
+            this.progressPanel = progressPanel;
+            progressBar = new JProgressBar(0, 100);
+            progressBar.setStringPainted(true);
+        }
+
+        @Override
+        public void currentProgress(long cur, long whole) throws OperationInterrupt {
+            synchronized (SFMWindow.this) {
+                if (waitTracker == null || waitTracker.isInterrupted()) {
+                    throw new OperationInterrupt();
+                }
+            }
+            int percent = (int)(100*cur/whole);
+            progressBar.setValue(percent);
+        }
+
+        @Override
+        public void startPhase(String description, boolean hasProgress) {
+            SFMWindow.this.setTitle(description);
+            if (hasProgress) {
+                progressBar.setValue(0);
+                progressPanel.add(progressBar);
+            } else {
+                progressPanel.remove(progressBar);
+            }
+            progressPanel.revalidate();
+            progressPanel.repaint();
+        }
+    }
+
     @Override
     public synchronized void enterWaitMode(ProxyProgressTracker tracker) {
         if (!possibleLongOperationStarted) {
@@ -98,26 +125,16 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         }
         waitTracker = tracker;
 
-        JProgressBar progressBar = new JProgressBar(0, 100);
-        progressBar.setValue(0);
-        progressBar.setStringPainted(true);
-
         JButton stopButton = new JButton("Stop");
         stopButton.addActionListener((e) -> interruptWaiting());
 
         JPanel progressPanel = new JPanel();
-        progressPanel.add(progressBar);
         progressPanel.add(stopButton);
         this.setContentPane(progressPanel);
         revalidate();
         repaint();
 
-        waitTracker.setTracker(new ProgressTracker() {
-            @Override
-            public void currentProgress(long cur, long whole) throws OperationInterrupt {
-                changeProgress(progressBar, cur, whole);
-            }
-        });
+        waitTracker.setTracker(new ProgressTrackerImplementation(progressPanel));
     }
 
     @Override

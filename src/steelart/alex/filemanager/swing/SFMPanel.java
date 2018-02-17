@@ -205,6 +205,7 @@ public class SFMPanel extends JPanel {
             File file = provider.get();
             // This could be long operation without possible progress bar...
             // TODO: implement interruptible preview
+            tracker.startPhase("Prepearing preview for " + element.name(), false);
             Component preview = findPreview(file);
             // So lets check the process was not interrupted
             // If it was - just ignore preview result for now...

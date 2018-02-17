@@ -50,6 +50,7 @@ public class FMUtils {
             String hostName = list.get(0);
             List<String> dirPath = list.subList(1, list.size());
 
+            tracker.startPhase("Connecting " + hostName, false);
             FMElementCollection host = FMFTPDirectory.enterFtpServer(hostName, null);
             return goToPath(host, dirPath, tracker);
         } else {

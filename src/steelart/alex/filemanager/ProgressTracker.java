@@ -9,6 +9,8 @@ package steelart.alex.filemanager;
  */
 public interface ProgressTracker {
 
+    public void startPhase(String description, boolean hasProgress);
+
     /** This method should be used to inform about current progress */
     public void currentProgress(long cur, long whole) throws OperationInterrupt;
 
@@ -16,6 +18,9 @@ public interface ProgressTracker {
         return new ProgressTracker() {
             @Override
             public void currentProgress(long cur, long whole) {
+            }
+            @Override
+            public void startPhase(String description, boolean hasProgress) {
             }
         };
     }
