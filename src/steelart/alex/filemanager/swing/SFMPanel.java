@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -254,8 +255,12 @@ public class SFMPanel extends JPanel {
                     task.apply(tracker);
                 } catch (OperationInterrupt e) {
                     // just ignore it
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
+                    JOptionPane.showMessageDialog(SFMPanel.this,
+                            e.getMessage(),
+                            "Unexpected problem",
+                            JOptionPane.ERROR_MESSAGE);
                 } finally {
                     if (!tracker.isInterrupted())
                         listener.endPossibleLongOperation();
