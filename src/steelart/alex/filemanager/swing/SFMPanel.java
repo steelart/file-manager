@@ -335,18 +335,10 @@ public class SFMPanel extends JPanel {
             return collumns.get(col).data(elements.get(row));
         }
 
-        /*
-         * JTable uses this method to determine the default renderer/ editor for each
-         * cell. If we didn't implement this method, then the last column would contain
-         * text ("true"/"false"), rather than a check box.
-         */
         public Class<?> getColumnClass(int c) {
             return getValueAt(0, c).getClass();
         }
 
-        /*
-         * Don't need to implement this method unless your table's editable.
-         */
         public boolean isCellEditable(int row, int col) {
             return false;
         }
