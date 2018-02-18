@@ -11,17 +11,21 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.RowSorter;
+import javax.swing.RowSorter.SortKey;
+import javax.swing.SortOrder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableModel;
 
 import steelart.alex.filemanager.FMElementCollection;
 import steelart.alex.filemanager.ContentProviderImpl;
@@ -58,6 +62,7 @@ public class SFMPanel extends JPanel {
     private volatile JTable table;
     private volatile FMElementCollection curDir;
     private volatile List<FMElement> elements;
+    private SortKey sortKey = new SortKey(0, SortOrder.ASCENDING);
 
     public SFMPanel(FMPanelListener listener, FMElementCollection start) {
         super(new GridLayout(1,0));
@@ -66,8 +71,8 @@ public class SFMPanel extends JPanel {
         resetTable(start);
     }
 
-    private static List<FMElement> getElementList(Collection<FMElement> elements) {
-        return FMUtils.getSortedList(elements, ElementColumnProperty.NAME, false);
+    private void resortElements() {
+        elements = FMUtils.getSortedList(curDir.content(), collumns.get(sortKey.getColumn()), sortKey.getSortOrder() != SortOrder.ASCENDING);
     }
 
     public FMElementCollection getCurrentDirectory() {
@@ -85,7 +90,7 @@ public class SFMPanel extends JPanel {
 
     private void resetTable(FMElementCollection newDir) {
         curDir = newDir;
-        this.elements = getElementList(curDir.content());
+        resortElements();
         if (table == null) {
             createTable();
         } else {
@@ -110,6 +115,7 @@ public class SFMPanel extends JPanel {
     private void createTable() {
         FMPanelModel pm = new FMPanelModel();
         table = new JTable(pm);
+        table.setRowSorter(new ElementSorter());
 
         table.setFillsViewportHeight(true);
         table.setCellSelectionEnabled(true);
@@ -343,6 +349,86 @@ public class SFMPanel extends JPanel {
          */
         public boolean isCellEditable(int row, int col) {
             return false;
+        }
+    }
+
+    /** It is a not normal sorter: it changes table model instead of just sort it */
+    private final class ElementSorter extends RowSorter<TableModel> {
+        @Override
+        public TableModel getModel() {
+            return table.getModel();
+        }
+
+        @Override
+        public void toggleSortOrder(int column) {
+            if (sortKey.getColumn() == column) {
+                SortOrder order = sortKey.getSortOrder() == SortOrder.ASCENDING ? SortOrder.DESCENDING : SortOrder.ASCENDING;
+                sortKey = new SortKey(column, order);
+            } else {
+                sortKey = new SortKey(column, SortOrder.ASCENDING);
+            }
+            resortElements();
+            System.out.println("Toggle column: " + column);
+        }
+
+        @Override
+        public int convertRowIndexToModel(int index) {
+            return index;
+        }
+
+        @Override
+        public int convertRowIndexToView(int index) {
+            return index;
+        }
+
+        @Override
+        public List<? extends SortKey> getSortKeys() {
+            return Collections.singletonList(sortKey);
+        }
+
+        @Override
+        public int getViewRowCount() {
+            return table.getModel().getRowCount();
+        }
+
+        @Override
+        public int getModelRowCount() {
+            return table.getModel().getRowCount();
+        }
+
+        @Override
+        public void setSortKeys(List<? extends SortKey> keys) {
+            throw new IllegalStateException("allRowsChanged");
+        }
+
+        @Override
+        public void modelStructureChanged() {
+            throw new IllegalStateException("modelStructureChanged");
+        }
+
+        @Override
+        public void allRowsChanged() {
+            throw new IllegalStateException("allRowsChanged");
+        }
+
+        @Override
+        public void rowsInserted(int firstRow, int endRow) {
+            throw new IllegalStateException("rowsInserted: " + firstRow + ":" + endRow);
+        }
+
+        @Override
+        public void rowsDeleted(int firstRow, int endRow) {
+            throw new IllegalStateException("rowsDeleted: " + firstRow + ":" + endRow);
+        }
+
+        @Override
+        public void rowsUpdated(int firstRow, int endRow) {
+            throw new IllegalStateException("rowsUpdated: " + firstRow + ":" + endRow);
+        }
+
+        @Override
+        public void rowsUpdated(int firstRow, int endRow, int column) {
+            throw new IllegalStateException("rowsUpdated: " + firstRow + ":" + endRow + " -> " + column);
         }
     }
 }
