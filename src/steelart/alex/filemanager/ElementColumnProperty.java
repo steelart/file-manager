@@ -2,6 +2,8 @@ package steelart.alex.filemanager;
 
 import java.util.Comparator;
 
+import org.apache.commons.io.FileUtils;
+
 /**
  * File manager element property represented in some panel column.
  * It is some unification for different information representation.
@@ -39,7 +41,7 @@ public enum ElementColumnProperty {
         public String data(FMElement e) {
             long size = e.size();
             if(size < 0) return "";
-            return "" + size + "b"; // TODO: inefficient
+            return FileUtils.byteCountToDisplaySize(size);
         }
 
         @Override
