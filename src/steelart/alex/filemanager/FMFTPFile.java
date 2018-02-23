@@ -3,7 +3,6 @@ package steelart.alex.filemanager;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
 /**
@@ -15,13 +14,13 @@ import org.apache.commons.net.ftp.FTPFile;
 public class FMFTPFile implements FMElement {
     private final String path;
     private final FTPFile ftpFile;
-    private final FTPClient client;
+    private final FTPConnection connection;
 
 
-    public FMFTPFile(String path, FTPFile ftpFile, FTPClient client) {
+    public FMFTPFile(String path, FTPFile ftpFile, FTPConnection connection) {
         this.path = path;
         this.ftpFile = ftpFile;
-        this.client = client;
+        this.connection = connection;
     }
 
     @Override
@@ -39,13 +38,13 @@ public class FMFTPFile implements FMElement {
         progress.startPhase("Downloading " + name(), true);
         String fullPath = path + '/' + name();
         FileProvider res = null;
-        try (InputStream is = client.retrieveFileStream(fullPath)) {
+        try (InputStream is = connection.retrieveFileStream(fullPath)) {
             res = TmpFileProvider.create(is, name(), progress, ftpFile.getSize());
             return res;
         } finally {
-            boolean completePendingCommand = client.completePendingCommand();
+            boolean completePendingCommand = connection.completePendingCommand();
             if (res != null && !completePendingCommand) {
-                throw new IOException("Could not extract file from " + FMFTPDirectory.ftpPath(fullPath, client));
+                throw new IOException("Could not extract file from " + connection.ftpPath(fullPath));
             }
         }
     }

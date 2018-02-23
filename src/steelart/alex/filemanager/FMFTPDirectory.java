@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
 /**
@@ -18,14 +17,14 @@ import org.apache.commons.net.ftp.FTPFile;
 public class FMFTPDirectory implements FMEnterable  {
     private final String path;
     private final String name;
-    private final FTPClient client;
+    private final FTPConnection connection;
     private final Supplier<FMElementCollection> exitPoint;
 
 
-    private FMFTPDirectory(String path, String name, FTPClient client, Supplier<FMElementCollection> exitPoint) {
+    private FMFTPDirectory(String path, String name, FTPConnection connection, Supplier<FMElementCollection> exitPoint) {
         this.path = path;
         this.name = name;
-        this.client = client;
+        this.connection = connection;
         this.exitPoint = exitPoint;
     }
 
@@ -51,44 +50,29 @@ public class FMFTPDirectory implements FMEnterable  {
 
     @Override
     public FMElementCollection enter(ProgressTracker progress) throws IOException {
-        return constructFromCurFtpDir(path + '/' + name(), client, exitPoint, false);
+        return constructFromCurFtpDir(path + '/' + name(), connection, exitPoint, false);
     }
 
     public static FMElementCollection enterFtpServer(String server, Supplier<FMElementCollection> exitPoint) throws IOException {
-        FTPClient client = new FTPClient();
+        FTPConnection connection = null;
         try {
-            client.connect(server);
-            client.enterLocalPassiveMode();
-            client.login("anonymous", "");
-            client.setFileType(FTPClient.BINARY_FILE_TYPE);
-            if (client.isConnected()) {
-                FMElementCollection res = constructFromCurFtpDir("", client, exitPoint, true);
-                client = null;
-                return res;
-            }
-            return null;
+            connection = FTPConnection.connect(server);
+            FMElementCollection res = constructFromCurFtpDir("", connection, exitPoint, true);
+            connection = null;
+            return res;
         } finally {
-            if (client != null)
-                disconnect(client);
+            if (connection != null)
+                connection.disconnect();
         }
     }
 
-    private static void disconnect(FTPClient client) {
-        try {
-            client.logout();
-            client.disconnect();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static FMElementCollection constructFromCurFtpDir(String path, FTPClient client, Supplier<FMElementCollection> exitPoint, boolean disconnectOnExit) throws IOException {
+    private static FMElementCollection constructFromCurFtpDir(String path, FTPConnection connection, Supplier<FMElementCollection> exitPoint, boolean disconnectOnExit) throws IOException {
         List<FMElement> content = new ArrayList<>();
         FMElementCollection res = new FMElementCollection() {
             @Override
             public FMElementCollection leaveDir() {
                 if (disconnectOnExit) {
-                    disconnect(client);
+                    connection.disconnect();
                 }
                 return exitPoint != null ? exitPoint.get() : null;
             }
@@ -100,28 +84,24 @@ public class FMFTPDirectory implements FMEnterable  {
 
             @Override
             public String path() {
-                return ftpPath(path, client);
+                return connection.ftpPath(path);
             }
         };
-        FTPFile[] ftpFiles = client.listFiles(path);
+        FTPFile[] ftpFiles = connection.listFiles(path);
         for (FTPFile ftpFile : ftpFiles) {
             // Check if FTPFile is a regular file
             if (ftpFile.getType() == FTPFile.FILE_TYPE) {
-                FMFTPFile fmFtpFile = new FMFTPFile(path, ftpFile, client);
+                FMFTPFile fmFtpFile = new FMFTPFile(path, ftpFile, connection);
                 FMElement e = FMUtils.filterElement(fmFtpFile, () -> res, res.path());
                 content.add(e);
             }
             if (ftpFile.getType() == FTPFile.DIRECTORY_TYPE) {
-                content.add(new FMFTPDirectory(path, ftpFile.getName(), client, () -> res));
+                content.add(new FMFTPDirectory(path, ftpFile.getName(), connection, () -> res));
             }
         }
         if (exitPoint != null) {
             content.add(new ParentDirectory(res, exitPoint));
         }
         return res;
-    }
-
-    public static String ftpPath(String path, FTPClient client) {
-        return "ftp://" + client.getRemoteAddress().getHostName() + path;
     }
 }
