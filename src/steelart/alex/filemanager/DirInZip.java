@@ -80,7 +80,7 @@ public class DirInZip implements FMEnterable {
                 return path;
             }
         };
-        res.add(new ParentDirectory(r, exitPoint));
+        res.add(new ParentDirectory(r, exitPoint, name()));
         return r;
     }
 

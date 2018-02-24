@@ -50,14 +50,14 @@ public class FMFTPDirectory implements FMEnterable  {
 
     @Override
     public FMElementCollection enter(ProgressTracker progress) throws IOException {
-        return constructFromCurFtpDir(path + '/' + name(), connection, exitPoint, false);
+        return constructFromCurFtpDir(path + '/' + name(), connection, exitPoint, name(), false);
     }
 
     public static FMElementCollection enterFtpServer(String server, Supplier<FMElementCollection> exitPoint) throws IOException {
         FTPConnection connection = null;
         try {
             connection = FTPConnection.connect(server);
-            FMElementCollection res = constructFromCurFtpDir("", connection, exitPoint, true);
+            FMElementCollection res = constructFromCurFtpDir("", connection, exitPoint, null, true);
             connection = null;
             return res;
         } finally {
@@ -66,7 +66,7 @@ public class FMFTPDirectory implements FMEnterable  {
         }
     }
 
-    private static FMElementCollection constructFromCurFtpDir(String path, FTPConnection connection, Supplier<FMElementCollection> exitPoint, boolean disconnectOnExit) throws IOException {
+    private static FMElementCollection constructFromCurFtpDir(String path, FTPConnection connection, Supplier<FMElementCollection> exitPoint, String elementName, boolean disconnectOnExit) throws IOException {
         List<FMElement> content = new ArrayList<>();
         FMElementCollection res = new FMElementCollection() {
             @Override
@@ -100,7 +100,7 @@ public class FMFTPDirectory implements FMEnterable  {
             }
         }
         if (exitPoint != null) {
-            content.add(new ParentDirectory(res, exitPoint));
+            content.add(new ParentDirectory(res, exitPoint, elementName));
         }
         return res;
     }

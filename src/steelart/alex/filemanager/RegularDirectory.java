@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Regular directory element in panel
@@ -41,8 +42,11 @@ public class RegularDirectory implements FMEnterable {
             }
         };
         File p = dir.getParentFile();
-        if (p != null)
-            elements.add(new ParentDirectory(fmDirectory, () -> new RegularDirectory(dir.getParentFile()).enter(ProgressTracker.empty())));
+        if (p != null) {
+            Supplier<FMElementCollection> exitPoint = () -> new RegularDirectory(dir.getParentFile()).enter(ProgressTracker.empty());
+            ParentDirectory parentDir = new ParentDirectory(fmDirectory, exitPoint, name());
+            elements.add(parentDir);
+        }
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
                 RegularFile rf = new RegularFile(file);

@@ -23,4 +23,9 @@ public interface FMElementCollection {
 
     /** @return string path to this directory */
     public String path();
+
+    /** @return name of initially selected element or null */
+    public default String startElementName() {
+        return null;
+    }
 }

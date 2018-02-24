@@ -96,6 +96,19 @@ public class SFMPanel extends JPanel {
         } else {
             table.revalidate();
         }
+        chooseStartElement();
+    }
+
+    private void chooseStartElement() {
+        String start = curDir.startElementName();
+        if (start != null) {
+            for (int i = 0; i < elements.size(); i++) {
+                if (elements.get(i).name().equals(start)) {
+                    selectElement(i);
+                    return;
+                }
+            }
+        }
         selectFirstElement();
     }
 
