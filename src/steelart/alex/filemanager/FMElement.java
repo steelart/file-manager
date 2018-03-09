@@ -21,5 +21,5 @@ public interface FMElement {
 
     /** @param progress TODO
      * @return file provider or null if this element is a directory */
-    public FileProvider requestFile(ProgressTracker progress) throws IOException;
+    public FileProvider requestFile(ProgressTracker progress) throws IOException, InterruptedException;
 }

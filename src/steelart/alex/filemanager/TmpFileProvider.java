@@ -40,7 +40,7 @@ class TmpFileProvider implements FileProvider {
         }
     }
 
-    public static FileProvider create(InputStream is, String name, ProgressTracker progress, long size) throws IOException {
+    public static FileProvider create(InputStream is, String name, ProgressTracker progress, long size) throws IOException, InterruptedException {
         File tmp = null;
         try {
             tmp = File.createTempFile("simple-file-manager-", name);
@@ -57,7 +57,7 @@ class TmpFileProvider implements FileProvider {
         }
     }
 
-    private static long copy(InputStream input, OutputStream output, ProgressTracker progress, long size) throws IOException {
+    private static long copy(InputStream input, OutputStream output, ProgressTracker progress, long size) throws IOException, InterruptedException {
         final int DEFAULT_BUFFER_SIZE = 1024 * 4;
         byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
         long count = 0;

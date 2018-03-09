@@ -9,10 +9,13 @@ package steelart.alex.filemanager;
  */
 public interface ProgressTracker {
 
+    /**
+     * @param description could be null
+     */
     public void startPhase(String description, boolean hasProgress);
 
     /** This method should be used to inform about current progress */
-    public void currentProgress(long cur, long whole) throws OperationInterrupt;
+    public void currentProgress(long cur, long whole) throws InterruptedException;
 
     public static ProgressTracker empty() {
         return new ProgressTracker() {

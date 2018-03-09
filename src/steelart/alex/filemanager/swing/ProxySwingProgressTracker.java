@@ -1,4 +1,8 @@
-package steelart.alex.filemanager;
+package steelart.alex.filemanager.swing;
+
+import javax.swing.SwingWorker;
+
+import steelart.alex.filemanager.ProgressTracker;
 
 /**
  * This class could be used for delayed progress bar!
@@ -6,16 +10,27 @@ package steelart.alex.filemanager;
  * @author Alexey Merkulov
  * @date 16 February 2018
  */
-public class ProxyProgressTracker implements ProgressTracker {
+class ProxySwingProgressTracker implements ProgressTracker {
+    private SwingWorker<?, ?> worker;
+
     /**
      * To avoid possible deadlock this proxy is not calling
      * tracker methods under synchronized block
      */
     private volatile ProgressTracker tracker = null;
-    private volatile boolean isInterrupted = false;
 
+    // Delayed data. They should be accessed under synchronization
     private String lastDescription = null;
-    private boolean hasProgress;
+    private boolean hasProgress = false;
+
+    /** Should be called only once before worker started */
+    public void setWorker(SwingWorker<?, ?> worker) {
+        this.worker = worker;
+    }
+
+    public boolean isCanceled() {
+        return worker.isCancelled();
+    }
 
     /**
      * GUI thread should initialize tracker only once so
@@ -25,7 +40,7 @@ public class ProxyProgressTracker implements ProgressTracker {
      * {@link #setTracker(ProgressTracker)} could be called in the same time.
      * So we need to synchronize delayed data.
      */
-    public synchronized void setTracker(ProgressTracker tracker) {
+    public void setTracker(ProgressTracker tracker) {
         String lastDescription = null;
         boolean hasProgress = false;
 
@@ -37,13 +52,12 @@ public class ProxyProgressTracker implements ProgressTracker {
             hasProgress = this.hasProgress;
         }
 
-        if (lastDescription != null) {
-            this.tracker.startPhase(lastDescription, hasProgress);
-        }
+        this.tracker.startPhase(lastDescription, hasProgress);
     }
 
+    /** Changing progress is not very important task, so it could be leave without additional synchronization */
     @Override
-    public void currentProgress(long cur, long whole) throws OperationInterrupt {
+    public void currentProgress(long cur, long whole) throws InterruptedException {
         if (tracker != null) {
             tracker.currentProgress(cur, whole);
         }
@@ -55,7 +69,7 @@ public class ProxyProgressTracker implements ProgressTracker {
      * So we need to synchronize delayed data.
      */
     @Override
-    public synchronized void startPhase(String description, boolean hasProgress) {
+    public void startPhase(String description, boolean hasProgress) {
         boolean trackerInited = false;
         synchronized (this) {
             if (tracker != null) {
@@ -69,11 +83,11 @@ public class ProxyProgressTracker implements ProgressTracker {
             tracker.startPhase(description, hasProgress);
     }
 
-    public void interrupted() {
-        isInterrupted = true;
+    public void cancel() {
+        worker.cancel(true);
     }
 
-    public boolean isInterrupted() {
-        return isInterrupted;
+    public boolean isDone() {
+        return worker.isDone();
     }
 }

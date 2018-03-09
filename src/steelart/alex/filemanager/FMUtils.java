@@ -37,7 +37,7 @@ public class FMUtils {
         return sorted;
     }
 
-    public static FMElementCollection goToPath(String path, ProgressTracker tracker) throws IOException {
+    public static FMElementCollection goToPath(String path, ProgressTracker tracker) throws IOException, InterruptedException {
         if (path.startsWith(FTP_PROTOCOL_PREFIX)) {
 
             String withoutPrefix = path.substring(FTP_PROTOCOL_PREFIX.length());
@@ -73,7 +73,7 @@ public class FMUtils {
             return goToPath(directory, sufix, tracker);
         }
     }
-    private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath, ProgressTracker tracker) throws IOException {
+    private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath, ProgressTracker tracker) throws IOException, InterruptedException {
         if (dirPath.isEmpty())
             return cur;
         String name = dirPath.get(0);
