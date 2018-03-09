@@ -17,7 +17,7 @@ public interface FMEnterable extends FMElement {
 
     /** Calculate directory content and enter to it
      * @param progress TODO*/
-    public FMElementCollection enter(ProgressTracker progress) throws IOException;
+    public FMElementCollection enter(ProgressTracker progress) throws IOException, InterruptedException;
 
     /** @return true iff this element is a directory */
     public boolean isDirectory();

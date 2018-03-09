@@ -34,12 +34,12 @@ public class FMZipFile implements FMEnterable {
     }
 
     @Override
-    public FMElementCollection enter(ProgressTracker progress) throws IOException {
+    public FMElementCollection enter(ProgressTracker progress) throws IOException, InterruptedException {
         ZipFile zip = null;
         try (FileProvider profider = element.requestFile(progress)) {
             File file = profider.get();
+            progress.startPhase("Reading ZIP archive " + name(), false);
             zip = new ZipFile(file);
-            progress.startPhase("Reading ZIP archive " + name(), true);
             DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name(), progress);
             FMElementCollection res = dir.simpleEnter();
             zip = null;
@@ -56,7 +56,7 @@ public class FMZipFile implements FMEnterable {
     }
 
     @Override
-    public FileProvider requestFile(ProgressTracker progress) throws IOException {
+    public FileProvider requestFile(ProgressTracker progress) throws IOException, InterruptedException {
         return element.requestFile(progress);
     }
 

@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -21,6 +24,7 @@ import javax.swing.JTable;
 import javax.swing.RowSorter;
 import javax.swing.RowSorter.SortKey;
 import javax.swing.SortOrder;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
@@ -32,9 +36,6 @@ import steelart.alex.filemanager.ContentProviderImpl;
 import steelart.alex.filemanager.ElementColumnProperty;
 import steelart.alex.filemanager.FMUtils;
 import steelart.alex.filemanager.FileProvider;
-import steelart.alex.filemanager.OperationInterrupt;
-import steelart.alex.filemanager.ProgressTracker;
-import steelart.alex.filemanager.ProxyProgressTracker;
 import steelart.alex.filemanager.api.ContentProvider;
 import steelart.alex.filemanager.api.swing.SwingPreviewPlugin;
 import steelart.alex.filemanager.FMElement;
@@ -47,9 +48,30 @@ import steelart.alex.filemanager.FMEnterable;
  * @date 26 January 2018
  */
 public class SFMPanel extends JPanel {
-    @FunctionalInterface
-    private static interface PossibleLongTask {
-        void apply(ProxyProgressTracker tracker) throws IOException;
+    private abstract class WorkerWithExceptionHandling<T, V> extends SwingWorker<T, V> {
+        private final ProxySwingProgressTracker tracker;
+
+        public WorkerWithExceptionHandling(ProxySwingProgressTracker tracker) {
+            this.tracker = tracker;
+        }
+
+        protected abstract void internalDone() throws InterruptedException, ExecutionException;
+
+        protected final void done() {
+            try {
+                internalDone();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(SFMPanel.this,
+                        e.getMessage(),
+                        "Unexpected problem",
+                        JOptionPane.ERROR_MESSAGE);
+            } catch (InterruptedException | CancellationException e) {
+                //TODO: should it be done something here?
+            } finally {
+                listener.endPossibleLongOperation(tracker);
+            }
+        }
     }
 
     private static final long serialVersionUID = 1L;
@@ -59,9 +81,9 @@ public class SFMPanel extends JPanel {
     private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingImagePreviewPlugin(), new SwingTextPreviewPlugin());
 
     private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
-    private volatile JTable table;
-    private volatile FMElementCollection curDir;
-    private volatile List<FMElement> elements;
+    private JTable table;
+    private FMElementCollection curDir;
+    private List<FMElement> elements;
     private SortKey sortKey = new SortKey(0, SortOrder.ASCENDING);
 
     public SFMPanel(FMPanelListener listener, FMElementCollection start) {
@@ -215,24 +237,30 @@ public class SFMPanel extends JPanel {
         FMElement element = getCurElement();
         if (element == null)
             return;
-        performPossibleLongTask((tracker) -> previewAction(element, tracker));
-    }
 
-    private void previewAction(FMElement element, ProxyProgressTracker tracker) throws IOException {
-        try (FileProvider provider = element.requestFile(tracker)) {
-            if (provider == null)
-                return;
-            File file = provider.get();
-            // This could be long operation without possible progress bar...
-            // TODO: implement interruptible preview
-            tracker.startPhase("Prepearing preview for " + element.name(), false);
-            Component preview = findPreview(file);
-            // So lets check the process was not interrupted
-            // If it was - just ignore preview result for now...
-            if (preview != null && !tracker.isInterrupted()) {
-                listener.previewAction(preview, element.name());
+        performPossibleLongTask((tracker) -> new WorkerWithExceptionHandling<Component, Void>(tracker) {
+            @Override
+            protected Component doInBackground() throws Exception {
+                try (FileProvider provider = element.requestFile(tracker)) {
+                    if (provider == null)
+                        return null;
+                    File file = provider.get();
+                    // This could be long operation without possible progress bar...
+                    // TODO: implement interruptible preview
+                    tracker.startPhase("Prepearing preview for " + element.name(), false);
+                    Component preview = findPreview(file);
+                    return preview;
+                }
             }
-        }
+
+            @Override
+            protected void internalDone() throws InterruptedException, ExecutionException {
+                Component preview = get();
+                if (preview != null) {
+                    listener.previewAction(preview, element.name());
+                }
+            }
+        });
     }
 
     private Component findPreview(File file) throws IOException {
@@ -251,42 +279,41 @@ public class SFMPanel extends JPanel {
         if (element == null) return;
         FMEnterable enterable = element.asEnterable();
         if (enterable != null) {
-            performPossibleLongTask((tracker) -> enterNewDir(enterable.enter(tracker)));
-        } else {
-            performPossibleLongTask((tracker) -> openWithStandardProgram(element, tracker));
-        }
-    }
-
-    private void openWithStandardProgram(FMElement element, ProgressTracker tracker) throws IOException {
-        try (FileProvider provider = element.requestFile(tracker)) {
-            File file = provider.get();
-            Desktop.getDesktop().open(file);
-            provider.preserve();
-        }
-    }
-
-    private void performPossibleLongTask(PossibleLongTask task) {
-        ProxyProgressTracker tracker = new ProxyProgressTracker();
-        listener.startPossibleLongOperation();
-        Runnable runnable = new Runnable() {
-            public void run() {
-                try {
-                    task.apply(tracker);
-                } catch (OperationInterrupt e) {
-                    // just ignore it
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(SFMPanel.this,
-                            e.getMessage(),
-                            "Unexpected problem",
-                            JOptionPane.ERROR_MESSAGE);
-                } finally {
-                    if (!tracker.isInterrupted())
-                        listener.endPossibleLongOperation();
+            performPossibleLongTask((tracker) -> new WorkerWithExceptionHandling<FMElementCollection, Void>(tracker) {
+                @Override
+                protected FMElementCollection doInBackground() throws Exception {
+                    return enterable.enter(tracker);
                 }
-            }
-        };
-        new Thread(runnable).start();
+                @Override
+                protected void internalDone() throws InterruptedException, ExecutionException {
+                    FMElementCollection newDir = get();
+                    enterNewDir(newDir);
+                }
+            });
+        } else {
+            performPossibleLongTask((tracker) -> new WorkerWithExceptionHandling<Void, Void>(tracker) {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    try (FileProvider provider = element.requestFile(tracker)) {
+                        File file = provider.get();
+                        Desktop.getDesktop().open(file);
+                        provider.preserve();
+                    }
+                    return null;
+                }
+                @Override
+                protected void internalDone() throws InterruptedException, ExecutionException {
+                    get();
+                }
+            });
+        }
+    }
+
+    private void performPossibleLongTask(Function<ProxySwingProgressTracker, SwingWorker<?, ?>> workerFunc) {
+        ProxySwingProgressTracker tracker = new ProxySwingProgressTracker();
+        SwingWorker<?, ?> worker = workerFunc.apply(tracker);
+        tracker.setWorker(worker);
+        worker.execute();
         // TODO: add signal to wake up for fast operations!
         try {
             //give time for fast operations
@@ -308,16 +335,25 @@ public class SFMPanel extends JPanel {
     }
 
     public void resetDir(String s) {
-        performPossibleLongTask((tracker) -> resetDir(s, tracker));
-    }
+        performPossibleLongTask((tracker) -> new WorkerWithExceptionHandling<FMElementCollection, Void>(tracker) {
+            @Override
+            protected FMElementCollection doInBackground() throws Exception {
+                FMElementCollection directory = FMUtils.goToPath(s, tracker);
+                if (directory == null) {
+                    return null;
+                }
+                while (curDir != null) curDir = curDir.leaveDir();
+                return directory;
+            }
 
-    private void resetDir(String s, ProgressTracker tracker) throws IOException {
-        FMElementCollection directory = FMUtils.goToPath(s, tracker);
-        if (directory == null) {
-            return;
-        }
-        while (curDir != null) curDir = curDir.leaveDir();
-        enterNewDir(directory);
+            @Override
+            protected void internalDone() throws InterruptedException, ExecutionException {
+                FMElementCollection directory = get();
+                if (directory != null) {
+                    enterNewDir(directory);
+                }
+            }
+        });
     }
 
     private void enterNewDir(FMElementCollection newDir) {

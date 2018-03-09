@@ -2,8 +2,6 @@ package steelart.alex.filemanager.swing;
 
 import java.awt.Component;
 
-import steelart.alex.filemanager.ProxyProgressTracker;
-
 /**
  * External listener for file manager panel actions
  *
@@ -17,7 +15,6 @@ public interface FMPanelListener {
     /** Notify about current directory change */
     public void directoryChangedNotify(String path);
 
-    public void startPossibleLongOperation();
-    public void endPossibleLongOperation();
-    public void enterWaitMode(ProxyProgressTracker tracker);
+    public void endPossibleLongOperation(ProxySwingProgressTracker tracker);
+    public void enterWaitMode(ProxySwingProgressTracker tracker);
 }

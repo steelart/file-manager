@@ -34,7 +34,7 @@ public class FMFTPFile implements FMElement {
     }
 
     @Override
-    public FileProvider requestFile(ProgressTracker progress) throws IOException {
+    public FileProvider requestFile(ProgressTracker progress) throws IOException, InterruptedException {
         progress.startPhase("Downloading " + name(), true);
         String fullPath = path + '/' + name();
         FileProvider res = null;

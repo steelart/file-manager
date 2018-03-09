@@ -11,7 +11,7 @@ import steelart.alex.filemanager.swing.SFMWindow;
  * @date 25 January 2017
  */
 public class FMMain {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         // There could be command line arguments parsing
         SFMWindow app = new SFMWindow(FMUtils.goToPath("", ProgressTracker.empty()));
         app.setVisible(true);

@@ -18,9 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 
 import steelart.alex.filemanager.FMElementCollection;
-import steelart.alex.filemanager.OperationInterrupt;
 import steelart.alex.filemanager.ProgressTracker;
-import steelart.alex.filemanager.ProxyProgressTracker;
 
 
 /**
@@ -35,9 +33,7 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     private final SFMPanel panel;
     private boolean previewMode = false;
 
-    /** It becomes true when file manage starts some possible long operation */
-    private boolean possibleLongOperationStarted = false;
-    private ProxyProgressTracker waitTracker = null;
+    private ProxySwingProgressTracker waitTracker = null;
 
     public SFMWindow(FMElementCollection start) {
         super(start.path());
@@ -62,7 +58,6 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     //--State related methods--//
     //-------------------------//
 
-    // For now this method is not needed synchronization
     @Override
     public void directoryChangedNotify(String path) {
         // TODO: Window title crops end of path, but better to crop start!
@@ -70,13 +65,8 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         this.setTitle(path);
     }
 
-    public synchronized void startPossibleLongOperation() {
-        possibleLongOperationStarted = true;
-    }
-
-    public synchronized void endPossibleLongOperation() {
-        possibleLongOperationStarted = false;
-        if (waitTracker != null) {
+    public void endPossibleLongOperation(ProxySwingProgressTracker tracker) {
+        if (waitTracker == tracker) {
             waitTracker = null;
             restorePanel();
         }
@@ -85,24 +75,27 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     private final class ProgressTrackerImplementation implements ProgressTracker {
         private final JPanel progressPanel;
         private final JProgressBar progressBar;
+        private final ProxySwingProgressTracker tracker;
 
-        private ProgressTrackerImplementation(JPanel progressPanel) {
+        private ProgressTrackerImplementation(JPanel progressPanel, ProxySwingProgressTracker tracker) {
             this.progressPanel = progressPanel;
+            this.tracker = tracker;
             progressBar = new JProgressBar(0, 100);
             progressBar.setStringPainted(true);
         }
 
+        // Should be called from background thread!
         @Override
-        public void currentProgress(long cur, long whole) throws OperationInterrupt {
-            synchronized (SFMWindow.this) {
-                if (waitTracker == null || waitTracker.isInterrupted()) {
-                    throw new OperationInterrupt();
-                }
+        public void currentProgress(long cur, long whole) throws InterruptedException {
+            // TODO: not sure about checking thread interrupted status
+            if (tracker.isCanceled() || Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException();
             }
             int percent = (int)(100*cur/whole);
             progressBar.setValue(percent);
         }
 
+        // Should be called from background thread!
         @Override
         public void startPhase(String description, boolean hasProgress) {
             SFMWindow.this.setTitle(description);
@@ -118,9 +111,8 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     }
 
     @Override
-    public synchronized void enterWaitMode(ProxyProgressTracker tracker) {
-        if (!possibleLongOperationStarted) {
-            // operation was fast
+    public void enterWaitMode(ProxySwingProgressTracker tracker) {
+        if (tracker.isDone()) {
             return;
         }
         waitTracker = tracker;
@@ -134,12 +126,11 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         revalidate();
         repaint();
 
-        waitTracker.setTracker(new ProgressTrackerImplementation(progressPanel));
+        waitTracker.setTracker(new ProgressTrackerImplementation(progressPanel, tracker));
     }
 
     @Override
-    public synchronized void previewAction(Component preview, String title) {
-        possibleLongOperationStarted = false;
+    public void previewAction(Component preview, String title) {
         waitTracker = null;
 
         JPanel previewPanel = new JPanel(new GridLayout(1,0));
@@ -152,7 +143,7 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         preview.requestFocus();
     }
 
-    private synchronized void restorePanel() {
+    private void restorePanel() {
         this.setContentPane(panel);
         previewMode = false;
         this.setTitle(panel.getCurrentDirectory().path());
@@ -160,11 +151,11 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         panel.requestFocus();
     }
 
-    private synchronized void interruptWaiting() {
+    private void interruptWaiting() {
         if (waitTracker == null)
             return;
-        waitTracker.interrupted();
-        endPossibleLongOperation();
+        waitTracker.cancel();
+        endPossibleLongOperation(null);
     }
 
     //--------------------------//

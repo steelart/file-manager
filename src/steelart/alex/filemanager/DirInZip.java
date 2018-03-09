@@ -93,7 +93,7 @@ public class DirInZip implements FMEnterable {
         return buf.toString();
     }
 
-    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath, ProgressTracker progress) throws OperationInterrupt {
+    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath, ProgressTracker progress) throws InterruptedException {
         Enumeration<? extends ZipEntry> entries = zip.entries();
 
         DirInZip root = new DirInZip(exitPoint, parentPath, "", zip);
@@ -113,9 +113,9 @@ public class DirInZip implements FMEnterable {
                 throw new IllegalStateException("Incorrect zip file, TODO message");
         };
         Function<List<String>, DirInZip> pathToDir = r.func;
-
         int size = zip.size();
         int curNum = 0;
+        progress.startPhase(null, true);
         while (entries.hasMoreElements()) {
             progress.currentProgress(curNum, size);
             ZipEntry elem = entries.nextElement();
