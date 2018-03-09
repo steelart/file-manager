@@ -373,7 +373,6 @@ public class SFMPanel extends JPanel {
                 sortKey = new SortKey(column, SortOrder.ASCENDING);
             }
             resortElements();
-            System.out.println("Toggle column: " + column);
         }
 
         @Override
