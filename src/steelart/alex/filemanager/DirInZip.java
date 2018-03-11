@@ -43,11 +43,6 @@ public class DirInZip implements FMEnterable {
     }
 
     @Override
-    public FileProvider requestFile(ProgressTracker progress) {
-        return null;
-    }
-
-    @Override
     public long size() {
         return -1;
     }
