@@ -19,7 +19,6 @@ public interface FMElement {
         return null;
     }
 
-    /** @param progress TODO
-     * @return file provider or null if this element is a directory */
+    /** @return file provider or throws exception (for directories) */
     public FileProvider requestFile(ProgressTracker progress) throws IOException, InterruptedException;
 }

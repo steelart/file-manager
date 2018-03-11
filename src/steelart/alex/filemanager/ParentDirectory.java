@@ -66,11 +66,6 @@ public class ParentDirectory implements FMEnterable {
     }
 
     @Override
-    public FileProvider requestFile(ProgressTracker progress) {
-        return null;
-    }
-
-    @Override
     public boolean isDirectory() {
         return true;
     }

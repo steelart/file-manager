@@ -1,5 +1,6 @@
 package steelart.alex.filemanager;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
@@ -21,4 +22,12 @@ public interface FMEnterable extends FMElement {
 
     /** @return true iff this element is a directory */
     public boolean isDirectory();
+
+    public default FileProvider requestFile(ProgressTracker progress) throws IOException, InterruptedException {
+        if (isDirectory()) {
+            throw new FileNotFoundException(name() + " (Is a directory)");
+        } else {
+            throw new IllegalStateException("Unimplemented requestFile() method for non-directory element");
+        }
+    }
 }
