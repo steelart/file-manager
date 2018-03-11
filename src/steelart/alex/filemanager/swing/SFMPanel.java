@@ -339,9 +339,6 @@ public class SFMPanel extends JPanel {
             @Override
             protected FMElementCollection doInBackground() throws Exception {
                 FMElementCollection directory = FMUtils.goToPath(s, tracker);
-                if (directory == null) {
-                    return null;
-                }
                 while (curDir != null) curDir = curDir.leaveDir();
                 return directory;
             }
