@@ -8,17 +8,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 
 import steelart.alex.filemanager.FMElementCollection;
-import steelart.alex.filemanager.ProgressTracker;
 
 
 /**
@@ -72,44 +69,6 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         }
     }
 
-    private final class ProgressTrackerImplementation implements ProgressTracker {
-        private final JPanel progressPanel;
-        private final JProgressBar progressBar;
-        private final ProxySwingProgressTracker tracker;
-
-        private ProgressTrackerImplementation(JPanel progressPanel, ProxySwingProgressTracker tracker) {
-            this.progressPanel = progressPanel;
-            this.tracker = tracker;
-            progressBar = new JProgressBar(0, 100);
-            progressBar.setStringPainted(true);
-        }
-
-        // Should be called from background thread!
-        @Override
-        public void currentProgress(long cur, long whole) throws InterruptedException {
-            // TODO: not sure about checking thread interrupted status
-            if (tracker.isCanceled() || Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException();
-            }
-            int percent = (int)(100*cur/whole);
-            progressBar.setValue(percent);
-        }
-
-        // Should be called from background thread!
-        @Override
-        public void startPhase(String description, boolean hasProgress) {
-            SFMWindow.this.setTitle(description);
-            if (hasProgress) {
-                progressBar.setValue(0);
-                progressPanel.add(progressBar);
-            } else {
-                progressPanel.remove(progressBar);
-            }
-            progressPanel.revalidate();
-            progressPanel.repaint();
-        }
-    }
-
     @Override
     public void enterWaitMode(ProxySwingProgressTracker tracker) {
         if (tracker.isDone()) {
@@ -117,16 +76,10 @@ public class SFMWindow extends JFrame implements FMPanelListener {
         }
         waitTracker = tracker;
 
-        JButton stopButton = new JButton("Stop");
-        stopButton.addActionListener((e) -> interruptWaiting());
-
-        JPanel progressPanel = new JPanel();
-        progressPanel.add(stopButton);
+        JPanel progressPanel = SwingProgressTracker.createPanel(tracker, this, (e) -> interruptWaiting());
         this.setContentPane(progressPanel);
-        revalidate();
-        repaint();
-
-        waitTracker.setTracker(new ProgressTrackerImplementation(progressPanel, tracker));
+        this.revalidate();
+        this.repaint();
     }
 
     @Override
