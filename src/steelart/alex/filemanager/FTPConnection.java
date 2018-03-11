@@ -20,7 +20,6 @@ import org.apache.commons.net.ftp.FTPReply;
  */
 class FTPConnection {
     private final FTPClient client;
-    private volatile boolean disconnected = false;
 
     private FTPConnection(FTPClient client) {
         this.client = client;
@@ -42,8 +41,7 @@ class FTPConnection {
         return client.completePendingCommand();
     }
 
-    public void disconnect() {
-        disconnected = true;
+    public synchronized void disconnect() {
         disconnect(client);
     }
 
@@ -56,21 +54,23 @@ class FTPConnection {
         }
     }
 
-
     private void keepConnection() {
-        while(client.isAvailable()) {
+        while(true) {
             try {
                 //10 seconds ping
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if (disconnected)
-                break;
-            try {
-                client.noop();
-            } catch (IOException e) {
-                e.printStackTrace();
+            synchronized(this) {
+                if (!client.isAvailable()) {
+                    break;
+                }
+                try {
+                    client.noop();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
