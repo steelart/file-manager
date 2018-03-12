@@ -2,10 +2,7 @@ package steelart.alex.filemanager.swing;
 
 import java.awt.Component;
 import java.awt.GridLayout;
-import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.JFrame;
@@ -14,6 +11,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.WindowConstants;
 
 import steelart.alex.filemanager.FMElementCollection;
 
@@ -35,7 +33,7 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     public SFMWindow(FMElementCollection start) {
         super(start.path());
         this.setBounds(100,100,800,500);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         panel = new SFMPanel(this, start);
         panel.setOpaque(true); //content panes must be opaque
@@ -118,53 +116,43 @@ public class SFMWindow extends JFrame implements FMPanelListener {
     private void addExitMenuItem(JMenu fileMenu) {
         JMenuItem exitItem = new JMenuItem("Exit");
         fileMenu.add(exitItem);
-        exitItem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
+        exitItem.addActionListener(e -> System.exit(0));
     }
 
     private void addFtpServerMenuItem(JMenu fileMenu) {
         JMenuItem ftpServer = new JMenuItem("goto");
         fileMenu.add(ftpServer);
-        ftpServer.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String s = (String)JOptionPane.showInputDialog(
-                                    SFMWindow.this,
-                                    "Specify path",
-                                    "Specify path",
-                                    JOptionPane.PLAIN_MESSAGE,
-                                    null,
-                                    null,
-                                    panel.getCurrentDirectory().path());
+        ftpServer.addActionListener(e -> {
+            String s = (String)JOptionPane.showInputDialog(
+                                SFMWindow.this,
+                                "Specify path",
+                                "Specify path",
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                null,
+                                panel.getCurrentDirectory().path());
 
-                if (s != null) {
-                    panel.resetDir(s);
-                }
+            if (s != null) {
+                panel.resetDir(s);
             }
         });
     }
 
     private void addHookForEsc() {
         //TODO: try to avoid this global hook!
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
-            @Override
-            public boolean dispatchKeyEvent(KeyEvent e) {
-                int code = e.getKeyCode();
-                switch (code) {
-                case KeyEvent.VK_ESCAPE:
-                    if (previewMode) {
-                        restorePanel();
-                    }
-                    if (waitTracker != null) {
-                        interruptWaiting();
-                    }
-                break;
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
+            int code = e.getKeyCode();
+            switch (code) {
+            case KeyEvent.VK_ESCAPE:
+                if (previewMode) {
+                    restorePanel();
                 }
-                return false;
+                if (waitTracker != null) {
+                    interruptWaiting();
+                }
+            break;
             }
-
+            return false;
         });
     }
 }

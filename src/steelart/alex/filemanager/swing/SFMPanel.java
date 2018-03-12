@@ -26,7 +26,6 @@ import javax.swing.RowSorter;
 import javax.swing.RowSorter.SortKey;
 import javax.swing.SortOrder;
 import javax.swing.SwingWorker;
-import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -81,7 +80,7 @@ public class SFMPanel extends JPanel {
 
     private final List<SwingPreviewPlugin> plugins = Arrays.asList(new SwingImagePreviewPlugin(), new SwingTextPreviewPlugin());
 
-    private final List<ElementColumnProperty> collumns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
+    private final List<ElementColumnProperty> columns = Arrays.asList(ElementColumnProperty.NAME, ElementColumnProperty.SIZE);
     private JTable table;
     private FMElementCollection curDir;
     private List<FMElement> elements;
@@ -95,7 +94,7 @@ public class SFMPanel extends JPanel {
     }
 
     private void resortElements() {
-        elements = FMUtils.getSortedList(curDir.content(), collumns.get(sortKey.getColumn()), sortKey.getSortOrder() != SortOrder.ASCENDING);
+        elements = FMUtils.getSortedList(curDir.content(), columns.get(sortKey.getColumn()), sortKey.getSortOrder() != SortOrder.ASCENDING);
     }
 
     public FMElementCollection getCurrentDirectory() {
@@ -159,12 +158,10 @@ public class SFMPanel extends JPanel {
         table.setFillsViewportHeight(true);
         table.setCellSelectionEnabled(true);
 
-        ListSelectionListener listener = new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent e) {
-                int[] selectedColumns = table.getSelectedColumns();
-                if (selectedColumns.length != table.getColumnCount()) {
-                    table.setColumnSelectionInterval(0, table.getColumnCount()-1);
-                }
+        ListSelectionListener listener = e -> {
+            int[] selectedColumns = table.getSelectedColumns();
+            if (selectedColumns.length != table.getColumnCount()) {
+                table.setColumnSelectionInterval(0, table.getColumnCount()-1);
             }
         };
 
@@ -251,9 +248,8 @@ public class SFMPanel extends JPanel {
                     File file = provider.get();
                     // This could be long operation without possible progress bar...
                     // TODO: implement interruptible preview
-                    tracker.startPhase("Prepearing preview for " + element.name(), false);
-                    Component preview = findPreview(file);
-                    return preview;
+                    tracker.startPhase("Preparing preview for " + element.name(), false);
+                    return findPreview(file);
                 }
             }
 
@@ -334,8 +330,7 @@ public class SFMPanel extends JPanel {
             return null;
         }
         int selected = selectedRow[0];
-        FMElement element = elements.get(selected);
-        return element;
+        return elements.get(selected);
     }
 
     public void resetDir(String s) {
@@ -363,14 +358,11 @@ public class SFMPanel extends JPanel {
         repaint();
     }
 
-    private  class FMPanelModel extends AbstractTableModel {
+    private class FMPanelModel extends AbstractTableModel {
         private static final long serialVersionUID = 1L;
 
-        public FMPanelModel() {
-        }
-
         public int getColumnCount() {
-            return collumns.size();
+            return columns.size();
         }
 
         public int getRowCount() {
@@ -378,11 +370,11 @@ public class SFMPanel extends JPanel {
         }
 
         public String getColumnName(int col) {
-            return collumns.get(col).name();
+            return columns.get(col).propName();
         }
 
         public Object getValueAt(int row, int col) {
-            return collumns.get(col).data(elements.get(row));
+            return columns.get(col).data(elements.get(row));
         }
 
         public Class<?> getColumnClass(int c) {
@@ -410,7 +402,6 @@ public class SFMPanel extends JPanel {
                 sortKey = new SortKey(column, SortOrder.ASCENDING);
             }
             resortElements();
-            System.out.println("Toggle column: " + column);
         }
 
         @Override

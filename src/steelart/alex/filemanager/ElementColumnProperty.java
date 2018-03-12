@@ -25,7 +25,7 @@ public enum ElementColumnProperty {
         }
         @Override
         public Comparator<FMElement> comparator(boolean reversed) {
-            Comparator<FMElement> comparator = (e1, e2) -> e1.name().compareTo(e2.name());
+            Comparator<FMElement> comparator = Comparator.comparing(FMElement::name);
             if (reversed) comparator = comparator.reversed();
             return comparator;
         }
@@ -46,7 +46,7 @@ public enum ElementColumnProperty {
 
         @Override
         public Comparator<FMElement> comparator(boolean reversed) {
-            Comparator<FMElement> comparator = (e1, e2) -> Long.compare(e1.size(), e2.size());
+            Comparator<FMElement> comparator = Comparator.comparingLong(FMElement::size);
             if (reversed) comparator = comparator.reversed();
             return comparator.thenComparing(NAME.comparator(false));
         }

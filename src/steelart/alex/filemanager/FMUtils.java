@@ -55,22 +55,22 @@ public class FMUtils {
             return goToPath(host, dirPath, tracker);
         } else {
             File dir = new File(path);
-            List<String> sufix = new LinkedList<>();
+            List<String> suffix = new LinkedList<>();
             while (!dir.isDirectory()) {
-                sufix.add(0, dir.getName());
+                suffix.add(0, dir.getName());
                 dir = dir.getParentFile();
                 if (dir == null) {
                     Path currentRelativePath = Paths.get("");
                     String curDirPath = currentRelativePath.toAbsolutePath().toString();
                     dir = new File(curDirPath);
                     if (path.isEmpty())
-                        sufix = Collections.emptyList();
+                        suffix = Collections.emptyList();
                     break;
                 }
             }
             FMEnterable enterable = new RegularDirectory(dir);
             FMElementCollection directory = enterable.enter(tracker);
-            return goToPath(directory, sufix, tracker);
+            return goToPath(directory, suffix, tracker);
         }
     }
     private static FMElementCollection goToPath(FMElementCollection cur, List<String> dirPath, ProgressTracker tracker) throws IOException, InterruptedException {
@@ -102,8 +102,6 @@ public class FMUtils {
     /** A shortcut to test {@link FMElement} to be a directory */
     public static boolean isDir(FMElement e) {
         FMEnterable enterable = e.asEnterable();
-        if (enterable != null)
-            return enterable.isDirectory();
-        return false;
+        return enterable != null && enterable.isDirectory();
     }
 }

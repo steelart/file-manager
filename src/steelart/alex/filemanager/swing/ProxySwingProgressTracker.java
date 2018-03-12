@@ -41,8 +41,8 @@ class ProxySwingProgressTracker implements ProgressTracker {
      * So we need to synchronize delayed data.
      */
     public void setTracker(ProgressTracker tracker) {
-        String lastDescription = null;
-        boolean hasProgress = false;
+        String lastDescription;
+        boolean hasProgress;
 
         synchronized (this) {
             if (this.tracker != null)

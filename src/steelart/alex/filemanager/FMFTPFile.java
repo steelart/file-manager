@@ -44,6 +44,7 @@ public class FMFTPFile implements FMElement {
         } finally {
             boolean completePendingCommand = connection.completePendingCommand();
             if (res != null && !completePendingCommand) {
+                // This exception could be thrown only in normal function exit way
                 throw new IOException("Could not extract file from " + connection.ftpPath(fullPath));
             }
         }

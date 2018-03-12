@@ -38,8 +38,8 @@ public class FMZipFile implements FMEnterable {
     @Override
     public FMElementCollection enter(ProgressTracker progress) throws IOException, InterruptedException {
         ZipFile zip = null;
-        try (FileProvider profider = element.requestFile(progress)) {
-            File file = profider.get();
+        try (FileProvider provider = element.requestFile(progress)) {
+            File file = provider.get();
             progress.startPhase("Reading ZIP archive " + name(), false);
             zip = new ZipFile(file);
             DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, elementPath, name(), progress);

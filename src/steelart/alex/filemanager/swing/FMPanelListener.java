@@ -8,7 +8,7 @@ import java.awt.Component;
  * @author Alexey Merkulov
  * @date 16 February 2018
  */
-public interface FMPanelListener {
+interface FMPanelListener {
     /** Ask about preview specified element */
     public void previewAction(Component preview, String title);
 

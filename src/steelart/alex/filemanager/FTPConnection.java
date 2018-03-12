@@ -2,7 +2,6 @@ package steelart.alex.filemanager;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketException;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -75,7 +74,7 @@ class FTPConnection {
         }
     }
 
-    public static FTPConnection connect(String server) throws SocketException, IOException {
+    public static FTPConnection connect(String server) throws IOException {
         FTPClient client = new FTPClient();
         try {
             client.connect(server);

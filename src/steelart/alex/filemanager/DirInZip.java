@@ -80,7 +80,7 @@ public class DirInZip implements FMEnterable {
     }
 
     private static String constructPath(List<String> path) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for(String part : path) {
             buf.append('/');
             buf.append(part);

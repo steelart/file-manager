@@ -13,8 +13,8 @@ import java.util.zip.ZipFile;
  */
 class FileInZip implements FMElement {
     private final ZipFile zip;
-    public final ZipEntry entry;
-    public final String name;
+    private final ZipEntry entry;
+    private final String name;
 
     public FileInZip(ZipFile zip, ZipEntry entry, String name) {
         this.entry = entry;

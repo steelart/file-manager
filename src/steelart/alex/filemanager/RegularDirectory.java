@@ -26,7 +26,7 @@ public class RegularDirectory implements FMEnterable {
 
     @Override
     public FMElementCollection enter(ProgressTracker progress) {
-        Set<FMElement> elements = new HashSet<FMElement>();
+        Set<FMElement> elements = new HashSet<>();
         FMElementCollection fmDirectory = new FMElementCollection() {
             @Override
             public Collection<FMElement> content() {

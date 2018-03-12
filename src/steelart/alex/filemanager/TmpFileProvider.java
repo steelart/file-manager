@@ -16,9 +16,9 @@ import java.io.OutputStream;
  */
 class TmpFileProvider implements FileProvider {
     private final File tmpFile;
-    boolean shouldDelete = true;
+    private boolean shouldDelete = true;
 
-    public TmpFileProvider(File tmpFile) {
+    private TmpFileProvider(File tmpFile) {
         this.tmpFile = tmpFile;
     }
 
@@ -36,7 +36,7 @@ class TmpFileProvider implements FileProvider {
     @Override
     public void close() {
         if (shouldDelete) {
-            tmpFile.delete();
+            deleteFile(tmpFile);
         }
     }
 
@@ -52,21 +52,31 @@ class TmpFileProvider implements FileProvider {
                 return fileProvider;
             }
         } finally {
-            if (tmp != null)
-                tmp.delete();
+            if (tmp != null) {
+                deleteFile(tmp);
+            }
         }
     }
 
-    private static long copy(InputStream input, OutputStream output, ProgressTracker progress, long size) throws IOException, InterruptedException {
+    private static void deleteFile(File tmp) {
+        boolean success = tmp.delete();
+        if (!success) {
+            System.err.println("Could not delete temporary file " + tmp);
+        }
+    }
+
+    private static void copy(InputStream input, OutputStream output, ProgressTracker progress, long size) throws IOException, InterruptedException {
         final int DEFAULT_BUFFER_SIZE = 1024 * 4;
         byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
         long count = 0;
-        int n = 0;
+        int n;
         while (-1 != (n = input.read(buffer))) {
             output.write(buffer, 0, n);
             count += n;
             progress.currentProgress(count, size);
         }
-        return count;
+        if (count != size) {
+            throw new IOException("Downloaded " + count + " bytes but expected " + size + " bytes");
+        }
     }
 }
