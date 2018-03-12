@@ -15,12 +15,14 @@ import java.util.zip.ZipFile;
 public class FMZipFile implements FMEnterable {
     private final FMElement element;
     private final Supplier<FMElementCollection> exitPoint;
-    private final String parentPath;
 
-    public FMZipFile(FMElement element, Supplier<FMElementCollection> exitPoint, String parentPath) {
+    /** Full element path is needed because of windows path difference */
+    private final String elementPath;
+
+    public FMZipFile(FMElement element, Supplier<FMElementCollection> exitPoint, String elementPath) {
         this.element = element;
         this.exitPoint = exitPoint;
-        this.parentPath = parentPath;
+        this.elementPath = elementPath;
     }
 
     @Override
@@ -40,7 +42,7 @@ public class FMZipFile implements FMEnterable {
             File file = profider.get();
             progress.startPhase("Reading ZIP archive " + name(), false);
             zip = new ZipFile(file);
-            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, parentPath + '/' + name(), progress);
+            DirInZip dir = DirInZip.constructDirTree(zip, exitPoint, elementPath, name(), progress);
             FMElementCollection res = dir.simpleEnter();
             zip = null;
             return res;

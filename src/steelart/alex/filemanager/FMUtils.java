@@ -91,9 +91,9 @@ public class FMUtils {
         throw new IOException("No file or directory with name '" + name + "' at " + cur.path());
     }
 
-    public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint, String parentPath) {
+    public static FMElement filterElement(FMElement e, Supplier<FMElementCollection> exitPoint, String elementPath) {
         if (e.name().endsWith(".zip") || e.name().endsWith(".jar")) {
-            return new FMZipFile(e, exitPoint, parentPath);
+            return new FMZipFile(e, exitPoint, elementPath);
         } else {
             return e;
         }

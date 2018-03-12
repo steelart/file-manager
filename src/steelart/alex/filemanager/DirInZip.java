@@ -88,10 +88,15 @@ public class DirInZip implements FMEnterable {
         return buf.toString();
     }
 
-    public static DirInZip constructDirTree(final ZipFile zip, Supplier<FMElementCollection> exitPoint, String parentPath, ProgressTracker progress) throws InterruptedException {
+    public static DirInZip constructDirTree(
+            final ZipFile zip,
+            Supplier<FMElementCollection> exitPoint,
+            String parentPath,
+            String parentName,
+            ProgressTracker progress) throws InterruptedException {
         Enumeration<? extends ZipEntry> entries = zip.entries();
 
-        DirInZip root = new DirInZip(exitPoint, parentPath, "", zip);
+        DirInZip root = new DirInZip(exitPoint, parentPath, parentName, zip);
 
         Recursive<Function<List<String>, DirInZip>> r = new Recursive<>();
         r.func = (List<String> path) -> {
@@ -123,7 +128,7 @@ public class DirInZip implements FMEnterable {
             String name = list.get(last);
             DirInZip dir = pathToDir.apply(dirPath);
             FileInZip z = new FileInZip(zip, elem, name);
-            FMElement e = FMUtils.filterElement(z, () -> dir.simpleEnter(), parentPath + constructPath(dirPath));
+            FMElement e = FMUtils.filterElement(z, () -> dir.simpleEnter(), parentPath + constructPath(dirPath) + '/' + z.name());
             dir.elements.put(name, e);
             curNum++;
         }

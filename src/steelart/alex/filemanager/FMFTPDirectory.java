@@ -87,7 +87,7 @@ public class FMFTPDirectory implements FMEnterable  {
             // Check if FTPFile is a regular file
             if (ftpFile.getType() == FTPFile.FILE_TYPE) {
                 FMFTPFile fmFtpFile = new FMFTPFile(path, ftpFile, connection);
-                FMElement e = FMUtils.filterElement(fmFtpFile, () -> res, res.path());
+                FMElement e = FMUtils.filterElement(fmFtpFile, () -> res, res.path() + '/' + fmFtpFile.name());
                 content.add(e);
             }
             if (ftpFile.getType() == FTPFile.DIRECTORY_TYPE) {
