@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -145,6 +146,9 @@ public class SFMPanel extends JPanel {
     private void selectElement(int row) {
         table.setRowSelectionInterval(row, row);
         table.setColumnSelectionInterval(0, table.getColumnCount()-1);
+
+        Rectangle cellRect = table.getCellRect(row, 0, false);
+        table.scrollRectToVisible(cellRect);
     }
 
     private void createTable() {
