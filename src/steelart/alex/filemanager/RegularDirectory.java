@@ -47,7 +47,12 @@ public class RegularDirectory implements FMEnterable {
             ParentDirectory parentDir = new ParentDirectory(fmDirectory, exitPoint, name());
             elements.add(parentDir);
         }
-        for (File file : dir.listFiles()) {
+        File[] listFiles = dir.listFiles();
+        if (listFiles == null) {
+            //TODO: runtime exception is not checked exception, better to convert it to IOException
+            throw new RuntimeException("STUB: Directory " + dir + "could not provide file list");
+        }
+        for (File file : listFiles) {
             if (file.isFile()) {
                 RegularFile rf = new RegularFile(file);
                 FMElement e = FMUtils.filterElement(rf, () -> this.enter(ProgressTracker.empty()), file.getPath());
